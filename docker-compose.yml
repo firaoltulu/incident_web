@@ -7,6 +7,11 @@ services:
         context: ./nginx
       ports:
         - '3001:80'
+      volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      depends_on:
+        - client
+        - api
 
     client:
       build:
@@ -22,7 +27,7 @@ services:
         - /server/node_modules
         - ./admin_server:/server
       environment:
-      - MONGO_URL=mongodb+srv://tululemma:tululemma@clusterfir.e6vva.mongodb.net/Midroc_Accident?retryWrites=true&w=majority
+        - MONGO_URL=mongodb+srv://tululemma:tululemma@clusterfir.e6vva.mongodb.net/Midroc_Accident?retryWrites=true&w=majority
       # - MONGO_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/${MONGO_INITDB_DATABASE}?authSource=admin
       # depends_on:
       #   mongo:

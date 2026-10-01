@@ -9,7 +9,7 @@ const {
     EditModuleStateById,
     AbortModuleStateById,
 
-} = require("../../models/module_state/Module_State.model");
+} = require("../../models/module_state/Module_state.model");
 
 const { getPagination } = require("../../services/query");
 

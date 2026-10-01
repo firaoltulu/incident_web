@@ -12,7 +12,7 @@ import { useBoolean } from 'src/hooks/use-boolean';
 
 import axios from 'src/utils/axios';
 
-import { CONFIG } from 'src/config-global';
+// import { CONFIG } from 'src/config-global';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -35,7 +35,7 @@ export function AccountChangePassword() {
   const password = useBoolean();
 
   const { user } = useAuthContext();
-  const URL = CONFIG.module.serverUrl;
+  // const URL = CONFIG.site.serverUrl;
 
 
   const defaultValues = { oldPassword: '', newPassword: '', confirmNewPassword: '' };
@@ -54,7 +54,7 @@ export function AccountChangePassword() {
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-      const response = await axios.put(`${URL}/auth/changePassword/${user.Id}`, data);
+      const response = await axios.put(`/auth/changePassword/${user.Id}`, data);
       reset();
       toast.success('Password Change success!');
     } catch (error) {

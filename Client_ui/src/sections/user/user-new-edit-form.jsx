@@ -19,7 +19,7 @@ import { useBoolean } from 'src/hooks/use-boolean';
 
 import axios from 'src/utils/axios';
 
-import { CONFIG } from 'src/config-global';
+// import { CONFIG } from 'src/config-global';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -50,13 +50,14 @@ export const NewUserSchema = zod.object({
   // Not required
 });
 
-// ----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 
 export function UserNewEditForm() {
   const router = useRouter();
-  const URL = CONFIG.module.serverUrl;
+  // const URL = CONFIG.site.serverUrl;
   const [groupOptions, setGroupOptions] = useState([]);
   const [reload, setReload] = useState(false);
+
 
   const password = useBoolean();
 
@@ -72,7 +73,7 @@ export function UserNewEditForm() {
   };
 
   useEffect(() => {
-    axios.get(`${URL}/company/list`).then((response) => {
+    axios.get(`/company/list`).then((response) => {
 
       const groups = response.data.companies.map((group) => ({
         label: group.Name,
@@ -85,7 +86,7 @@ export function UserNewEditForm() {
       setReload(!reload);
     });
 
-  }, [URL, reload]);
+  }, [reload]);
 
 
   const methods = useForm({
@@ -106,7 +107,7 @@ export function UserNewEditForm() {
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-      const response = await axios.post(`${URL}/auth/register`, data);
+      const response = await axios.post(`/auth/register`, data);
       reset();
       toast.success('Create success!');
 

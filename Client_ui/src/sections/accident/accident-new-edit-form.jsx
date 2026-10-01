@@ -477,7 +477,7 @@ const PrintableAccident = ({ currentAccident }) => {
 
 export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAccidentUpdate }) {
   const router = useRouter();
-  const URL = CONFIG.module.serverUrl;
+  // const URL = CONFIG.site.serverUrl;
   const ACCIDENT_MODULE_ID = CONFIG.module.accidentModule;
   const { workflows, workflowsLoading } = useWorkflowContext();
   const { buttons, buttonsLoading } = useButtonContext();
@@ -636,7 +636,7 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
     try {
       console.log('Form values:', methods.getValues());
       if (!currentAccident) {
-        const response = await axios.post(`${URL}/accident/register`, data);
+        const response = await axios.post(`/accident/register`, data);
         console.log('Data');
         console.log(data);
         console.log('Data');
@@ -645,12 +645,12 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
         toast.success('ሪፖርቱ በተሳካ ሁኔታ ተመዝግቧል!');
         router.push(paths.dashboard.accident.details(response.data.accident._id));
       } else {
-        const response = await axios.put(`${URL}/accident/edit/${currentAccident._id}`, data);
+        const response = await axios.put(`/accident/edit/${currentAccident._id}`, data);
         toast.success('ሪፖርቱ ተስተካክሏል!');
 
         if (typeof onAccidentUpdate === 'function') {
           const accidentId = currentAccident._id;
-          const accidentDetails = await axios.get(`${URL}/accident/details/:accidentId`, {
+          const accidentDetails = await axios.get(`/accident/details/:accidentId`, {
             params: { accidentId },
           });
           onAccidentUpdate(accidentDetails.data.accident);
@@ -672,12 +672,12 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
         currentState: action.currentState,
       };
 
-      await axios.put(`${URL}/accident/workflow/${currentAccident._id}`, payload);
+      await axios.put(`/accident/workflow/${currentAccident._id}`, payload);
       toast.success('ሁኔታው ተዘምኗል!');
 
       if (typeof onAccidentUpdate === 'function') {
         const accidentId = currentAccident._id;
-        const accidentDetails = await axios.get(`${URL}/accident/details/:accidentId`, {
+        const accidentDetails = await axios.get(`/accident/details/:accidentId`, {
           params: { accidentId },
         });
         onAccidentUpdate(accidentDetails.data.accident);

@@ -13,7 +13,7 @@ import LoadingButton from '@mui/lab/LoadingButton';
 
 import axios from 'src/utils/axios';
 
-import { CONFIG } from 'src/config-global';
+// import { CONFIG } from 'src/config-global';
 
 import { toast } from 'src/components/snackbar';
 import { Form, Field, schemaHelper } from 'src/components/hook-form';
@@ -49,12 +49,13 @@ export function AccountGeneral({ user }) {
   // const { user } = useMockedUser();
   // const { user } = useAuthContext();
 
-  const URL = CONFIG.module.serverUrl;
+  // const URL = CONFIG.site.serverUrl;
   const [groupOptions, setGroupOptions] = useState([]);
   const [reload, setReload] = useState(false);
 
   const [roleOptions, setRoleOptions] = useState([]);
   const [reloadRole, setReloadRole] = useState(false);
+
 
   const defaultValues = useMemo(
     () => ({
@@ -73,7 +74,7 @@ export function AccountGeneral({ user }) {
 
 
   useEffect(() => {
-    axios.get(`${URL}/company/list`).then((response) => {
+    axios.get(`/company/list`).then((response) => {
 
       const groups = response.data.companies.map((group) => ({
         label: group.Name,
@@ -86,10 +87,10 @@ export function AccountGeneral({ user }) {
       setReload(!reload);
     });
 
-  }, [URL, reload]);
+  }, [ reload]);
 
   useEffect(() => {
-    axios.get(`${URL}/role/list`).then((response) => {
+    axios.get(`/role/list`).then((response) => {
 
       const groups = response.data.roles.map((group) => ({
         label: group.Name,
@@ -102,7 +103,7 @@ export function AccountGeneral({ user }) {
       setReloadRole(!reloadRole);
     });
 
-  }, [URL, reloadRole]);
+  }, [reloadRole]);
 
   const methods = useForm({
     mode: 'all',
@@ -127,7 +128,7 @@ export function AccountGeneral({ user }) {
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-      await axios.put(`${URL}/auth/edit/${user.id}`, data);
+      await axios.put(`/auth/edit/${user.id}`, data);
       toast.success('Update success!');
 
     } catch (error) {
@@ -139,7 +140,9 @@ export function AccountGeneral({ user }) {
     <Form methods={methods} onSubmit={onSubmit}>
       <Grid container spacing={3}>
         <Grid xs={12} md={12}>
+
           <Card sx={{ p: 3 }}>
+
             <Box
               rowGap={3}
               columnGap={2}
@@ -185,7 +188,6 @@ export function AccountGeneral({ user }) {
               />
 
 
-
             </Box>
 
             <Stack alignItems="flex-end" sx={{ mt: 3 }}>
@@ -193,7 +195,9 @@ export function AccountGeneral({ user }) {
                 Edit user
               </LoadingButton>
             </Stack>
+
           </Card>
+
         </Grid>
 
       </Grid>

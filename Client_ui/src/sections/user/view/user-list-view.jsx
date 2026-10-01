@@ -19,7 +19,7 @@ import { useSetState } from 'src/hooks/use-set-state';
 
 import axios from 'src/utils/axios';
 
-import { CONFIG } from 'src/config-global';
+// import { CONFIG } from 'src/config-global';
 import { varAlpha } from 'src/theme/styles';
 import { useGetUsers } from 'src/actions/user';
 import { DashboardContent } from 'src/layouts/dashboard';
@@ -74,7 +74,7 @@ export function UserListView() {
   const table = useTable();
 
   const router = useRouter();
-  const URL = CONFIG.module.serverUrl;
+  // const URL = CONFIG.site.serverUrl;
 
 
   const { users, usersLoading } = useGetUsers();
@@ -93,8 +93,11 @@ export function UserListView() {
     }
   }, [users]);
 
+  console.log({ roleOptions });
+  console.log("ddddddddddddddddddddddddddd");
+
   useEffect(() => {
-    axios.get(`${URL}/role/list`).then((response) => {
+    axios.get(`/role/list`).then((response) => {
 
       const groups = response.data.roles.map((group) => ({
         label: group.Name,
@@ -107,7 +110,7 @@ export function UserListView() {
       setReloadRole(!reloadRole);
     });
 
-  }, [URL, reloadRole]);
+  }, [reloadRole]);
 
   const dataFiltered = applyFilter({
     inputData: tableData,
@@ -125,7 +128,7 @@ export function UserListView() {
   const handleDeleteRow = useCallback(
     async (id) => {
       try {
-        await axios.put(`${URL}/auth/active/${id}`, id);
+        await axios.put(`/auth/active/${id}`, id);
         toast.success('Operation success!');
         const deleteRow = tableData.map((row) => {
 
@@ -149,7 +152,7 @@ export function UserListView() {
         toast.error(error?.message || 'Operation failed!');
       }
     },
-    [dataInPage.length, table, tableData, URL]
+    [dataInPage.length, table, tableData]
   );
 
   const handleDeleteRows = useCallback(() => {

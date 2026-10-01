@@ -1,0 +1,18 @@
+# services:
+#   nginx:
+#     image: ghcr.io/${GH_OWNER}/farm-nginx:${TAG:-latest}
+#     restart: always
+#     ports:
+#       - "80:80"
+#     depends_on: [client, api]
+
+#   client:
+#     image: ghcr.io/${GH_OWNER}/farm-client:${TAG:-latest}
+#     restart: always
+
+#   api:
+#     image: ghcr.io/${GH_OWNER}/farm-api:${TAG:-latest}
+#     restart: always
+#     environment:
+#       - NODE_ENV=production
+#       - MONGO_URI=${MONGO_URI}

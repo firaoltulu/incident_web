@@ -22,7 +22,7 @@ import { useRouter } from 'src/routes/hooks';
 
 import axios from 'src/utils/axios';
 
-import { CONFIG } from 'src/config-global';
+// import { CONFIG } from 'src/config-global';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -81,7 +81,7 @@ export const NewProductSchema = zod.object({
 
 export function OrderNewEditForm({ currentWorkFlow, loading }) {
   const router = useRouter();
-  const URL = CONFIG.module.serverUrl;
+  // const URL = CONFIG.site.serverUrl;
 
   const [roleOptions, setRoleOptions] = useState([]);
   const [stateOptions, setStateOptions] = useState([]);
@@ -158,7 +158,7 @@ export function OrderNewEditForm({ currentWorkFlow, loading }) {
   }, [currentWorkFlow, values, dof, setValue]);
 
   useEffect(() => {
-    axios.get(`${URL}/role/list`).then((response) => {
+    axios.get(`/role/list`).then((response) => {
 
       const groups = response.data.roles.map((group) => ({
         label: group.Name,
@@ -171,10 +171,10 @@ export function OrderNewEditForm({ currentWorkFlow, loading }) {
       setReload(!reload);
     });
 
-  }, [URL, reload]);
+  }, [ reload]);
 
   useEffect(() => {
-    axios.get(`${URL}/modulestate/list`).then((response) => {
+    axios.get(`/modulestate/list`).then((response) => {
 
       const groups = response.data.moduleStates.map((group) => ({
         label: group.Name,
@@ -187,10 +187,10 @@ export function OrderNewEditForm({ currentWorkFlow, loading }) {
       setStateReload(!stateReload);
     });
 
-  }, [URL, stateReload]);
+  }, [ stateReload]);
 
   useEffect(() => {
-    axios.get(`${URL}/button/list`).then((response) => {
+    axios.get(`/button/list`).then((response) => {
 
       const groups = response.data.buttons.map((group) => ({
         label: group.Name,
@@ -203,11 +203,11 @@ export function OrderNewEditForm({ currentWorkFlow, loading }) {
       setButtonReload(!buttonReload);
     });
 
-  }, [URL, buttonReload]);
+  }, [ buttonReload]);
 
   useEffect(() => {
 
-    axios.get(`${URL}/module/list`).then((response) => {
+    axios.get(`/module/list`).then((response) => {
 
       const modules = response.data.modules.map((module) => ({
         label: module.Name,
@@ -220,7 +220,7 @@ export function OrderNewEditForm({ currentWorkFlow, loading }) {
       setModuleReload(r => !r);
     });
 
-  }, [URL, moduleReload]);
+  }, [ moduleReload]);
 
 
   useEffect(() => {
@@ -251,14 +251,14 @@ export function OrderNewEditForm({ currentWorkFlow, loading }) {
 
       if (!currentWorkFlow) {
 
-        const response = await axios.post(`${URL}/workflow/register`, newObj);
+        const response = await axios.post(`/workflow/register`, newObj);
         reset();
         toast.success('Create success!');
         router.push(paths.dashboard.workflow.edit(response.data.workflow._id));
       }
       else {
 
-        await axios.put(`${URL}/workflow/edit/${currentWorkFlow._id}`, newObj);
+        await axios.put(`/workflow/edit/${currentWorkFlow._id}`, newObj);
         toast.success('Update success!');
         // router.push(paths.dashboard.workflow.root);
       }
@@ -323,7 +323,7 @@ export function OrderNewEditForm({ currentWorkFlow, loading }) {
         status
       };
 
-      await axios.post(`${URL}/order/editstatus`, newObj);
+      await axios.post(`/order/editstatus`, newObj);
       toast.success('Edit Status was success!');
 
     } catch (error) {

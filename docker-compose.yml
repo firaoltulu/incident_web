@@ -16,17 +16,17 @@ services:
 
     api:
       build:
-        dockerfile: Dockerfile
+        dockerfile: Dockerfile.dev
         context: ./admin_server
       volumes:
         - /server/node_modules
         - ./admin_server:/server
       environment:
-      # - MONGO_URL=mongodb+srv://tululemma:tululemma@clusterfir.e6vva.mongodb.net/Midroc_Accident?retryWrites=true&w=majority
-      - MONGO_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/${MONGO_INITDB_DATABASE}?authSource=admin
-      depends_on:
-        mongo:
-          condition: service_healthy
+      - MONGO_URL=mongodb+srv://tululemma:tululemma@clusterfir.e6vva.mongodb.net/Midroc_Accident?retryWrites=true&w=majority
+      # - MONGO_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/${MONGO_INITDB_DATABASE}?authSource=admin
+      # depends_on:
+      #   mongo:
+      #     condition: service_healthy
 
     # mongo:
     #   image: mongo:7
@@ -43,23 +43,23 @@ services:
     #     interval: 10s
     #     timeout: 5s
     #     retries: 5
-    mongo:
-      build:
-        context: ./mongo
-        dockerfile: Dockerfile
-      ports:
-        - '127.0.0.1:27017:27017'
-      restart: always
-      environment:
-        MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
-        MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
-        MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
-      volumes:
-        - mongo_data:/data/db
-      healthcheck:
-        test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
-volumes:
-  mongo_data:
+    # mongo:
+    #   build:
+    #     context: ./mongo
+    #     dockerfile: Dockerfile
+    #   ports:
+    #     - '127.0.0.1:27017:27017'
+    #   restart: always
+    #   environment:
+    #     MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+    #     MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    #     MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+    #   volumes:
+    #     - mongo_data:/data/db
+    #   healthcheck:
+    #     test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+    #     interval: 10s
+    #     timeout: 5s
+    #     retries: 5
+# volumes:
+#   mongo_data:

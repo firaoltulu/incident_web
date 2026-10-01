@@ -15,7 +15,7 @@ import { useRouter } from 'src/routes/hooks';
 
 import axios from 'src/utils/axios';
 
-import { CONFIG } from 'src/config-global';
+// import { CONFIG } from 'src/config-global';
 
 import { toast } from 'src/components/snackbar';
 import { Form, Field, schemaHelper } from 'src/components/hook-form';
@@ -35,7 +35,7 @@ export const NewProductSchema = zod.object({
 
 export function ProductNewEditForm({ currentProduct }) {
   const router = useRouter();
-  const URL = CONFIG.module.serverUrl;
+  // const URL = CONFIG.site.serverUrl;
   const [groupOptions, setGroupOptions] = useState([]);
   const [reload, setReload] = useState(false);
 
@@ -55,7 +55,7 @@ export function ProductNewEditForm({ currentProduct }) {
   });
 
   useEffect(() => {
-    axios.get(`${URL}/company/listgroup`).then((response) => {
+    axios.get(`/company/listgroup`).then((response) => {
       const groups = response.data.companies.map((group) => ({
         label: group.Name,
         value: group.CompanyID,
@@ -78,7 +78,7 @@ export function ProductNewEditForm({ currentProduct }) {
       setReload(r => !r);
     });
 
-  }, [URL, reload, currentProduct]);
+  }, [ reload, currentProduct]);
 
   const {
     reset,
@@ -103,11 +103,11 @@ export function ProductNewEditForm({ currentProduct }) {
   const onSubmit = handleSubmit(async (data) => {
     try {
       if (!currentProduct) {
-        const response = await axios.post(`${URL}/company/register`, data);
+        const response = await axios.post(`/company/register`, data);
         reset();
         toast.success(currentProduct ? 'Update success!' : 'Create success!');
       } else {
-        await axios.put(`${URL}/company/edit/${currentProduct.CompanyID}`, data);
+        await axios.put(`/company/edit/${currentProduct.CompanyID}`, data);
         toast.success('Update success!');
       }
     } catch (error) {

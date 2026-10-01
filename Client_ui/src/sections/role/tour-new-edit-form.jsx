@@ -15,7 +15,7 @@ import { useRouter } from 'src/routes/hooks';
 
 import axios from 'src/utils/axios';
 
-import { CONFIG } from 'src/config-global';
+// import { CONFIG } from 'src/config-global';
 
 import { toast } from 'src/components/snackbar';
 import { Form, Field } from 'src/components/hook-form';
@@ -37,7 +37,7 @@ export const NewRoleSchema = zod
   });
 export function TourNewEditForm({ currentRole }) {
   const router = useRouter();
-  const URL = CONFIG.module.serverUrl;
+  // const URL = CONFIG.site.serverUrl;
 
   const [groupModules, setGroupModules] = useState([]);
   const [reload, setReload] = useState(false);
@@ -63,7 +63,7 @@ export function TourNewEditForm({ currentRole }) {
 
   useEffect(() => {
 
-    axios.get(`${URL}/module/list`).then((response) => {
+    axios.get(`/module/list`).then((response) => {
 
       const modules = response.data.modules.map((module) => ({
         label: module.Name,
@@ -77,7 +77,7 @@ export function TourNewEditForm({ currentRole }) {
       setReload(r => !r);
     });
 
-  }, [URL, reload]);
+  }, [reload]);
 
   const {
     watch,
@@ -98,13 +98,13 @@ export function TourNewEditForm({ currentRole }) {
   const onSubmit = handleSubmit(async (data) => {
     try {
       if (!currentRole) {
-        const response = await axios.post(`${URL}/role/register`, data);
+        const response = await axios.post(`/role/register`, data);
         reset();
         toast.success('Create success!');
         router.push(paths.dashboard.role.edit(response.data.role._id));
       }
       else {
-        await axios.put(`${URL}/role/edit/${currentRole.id}`, data);
+        await axios.put(`/role/edit/${currentRole.id}`, data);
         toast.success('Update success!');
       }
     } catch (error) {

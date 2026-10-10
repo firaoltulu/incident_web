@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 
+import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
+import Tabs from '@mui/material/Tabs';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
@@ -19,10 +21,12 @@ import { useSetState } from 'src/hooks/use-set-state';
 
 import { fIsAfter, fIsBetween } from 'src/utils/format-time';
 
+import { varAlpha } from 'src/theme/styles';
 import { useGetAccident } from 'src/actions/accident';
 import { DashboardContent } from 'src/layouts/dashboard';
 import { useWorkflowContext } from 'src/workflow/hooks/use-workflow-context';
 
+import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
@@ -216,7 +220,7 @@ export function AccidentListView() {
         />
 
         <Card>
-          {/* <Tabs
+          <Tabs
             value={filters.state.status}
             onChange={handleFilterStatus}
             sx={{
@@ -246,7 +250,7 @@ export function AccidentListView() {
                 }
               />
             ))}
-          </Tabs> */}
+          </Tabs>
 
           <AccidentTableToolbar
             filters={filters}

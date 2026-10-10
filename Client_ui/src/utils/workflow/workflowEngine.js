@@ -2,7 +2,7 @@
 
 function convertUserRolesToIds(userRoles) {
     if (!Array.isArray(userRoles)) return []
-    return userRoles.map(role => role._id)
+    return userRoles.filter(role => role?._id != null).map(role => role._id)
 }
 
 export function getAvailableWorkflowActions({
@@ -15,10 +15,17 @@ export function getAvailableWorkflowActions({
 
     const roleIds = convertUserRolesToIds(userRoles);
 
-    const transitions = workflow.Transition_Rules || []
+    const transitions = Array.isArray(workflow.Transition_Rules) ? workflow.Transition_Rules : []
 
     const allowedActions = transitions
         .filter(rule => {
+            if (
+                rule?.state?._id == null ||
+                rule?.allowed?._id == null ||
+                rule?.next_state?._id == null ||
+                rule?.action?._id == null
+            ) return false
+
             const sameState = rule.state._id === currentStateId
             const roleAllowed = roleIds.includes(rule.allowed._id)
 
@@ -26,11 +33,11 @@ export function getAvailableWorkflowActions({
         })
         .map(rule => {
 
-            const nextState = workflow.States.find(
+            const nextState = (workflow.States || []).find(
                 s => s.state._id === rule.next_state._id
             )
 
-            const action = actions.find(
+            const action = (actions || []).find(
                 a => a._id === rule.action._id
             )
 

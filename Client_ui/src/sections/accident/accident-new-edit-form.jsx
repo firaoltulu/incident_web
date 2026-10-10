@@ -35,7 +35,7 @@ import { useAuthContext } from 'src/auth/hooks';
 
 import { AccidentDetailsToolbar } from './accident-details-toolbar';
 
-// ----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 
 const NONE = 'የለም';
 
@@ -450,8 +450,8 @@ const PrintableAccident = ({ currentAccident }) => {
                   {section.title}
                 </td>
               </tr>
-              {section.rows.map(([label, value]) => (
-                <tr key={`${section.title}-${label}`}>
+              {section.rows.map(([label, value], rowIndex) => (
+                <tr key={`${section.title}-${label}-${rowIndex}`}>
                   <td style={printLabelStyle}>{label}</td>
                   <td style={printValueStyle}>{value}</td>
                 </tr>
@@ -488,11 +488,6 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
   const [canEdit, setCanEdit] = useState(true);
   const [actionLoading, setActionLoading] = useState({});
   const [incidentType, setIncidentType] = useState(currentAccident?.incident_type || 'ወንጀል');
-  console.log('**********');
-  console.log(JSON.stringify(currentAccident?.incident_type) || 'ወንጀል');
-
-  console.log(currentAccident?.incident_type);
-  console.log(currentAccident);
 
   const defaultValues = useMemo(
     () => ({
@@ -551,13 +546,13 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
     [currentAccident]
   );
 
+
   const methods = useForm({
     mode: 'all',
     resolver: zodResolver(AccidentSchema),
     defaultValues,
   });
-  // console.log("**********");
-  // console.log(methods);
+
 
   useEffect(() => {
     if (incidentType === 'ወንጀል') {
@@ -806,6 +801,7 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
         sx={cardHeaderSx}
       />
       <Divider />
+
       <Stack spacing={2} sx={{ p: 2 }}>
         <Typography variant="subtitle2" sx={fieldLabelSx}>
           በሰው ላይ የደረሰ ጉዳት
@@ -948,6 +944,7 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
                   disabled={!canEdit}
                 />
               </Stack>
+
               <Stack spacing={1}>
                 <Typography variant="subtitle2" sx={fieldLabelSx}>
                   ሰነድ ወይም ቴክኖሎጂ ውጤት ማበላሸት/ማቀጠል
@@ -959,6 +956,7 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
                   disabled={!canEdit}
                 />
               </Stack>
+
               <Stack spacing={1}>
                 <Typography variant="subtitle2" sx={fieldLabelSx}>
                   ያለፍቃድ አሳልፎ መስጠት
@@ -970,6 +968,7 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
                   disabled={!canEdit}
                 />
               </Stack>
+
               <Stack spacing={1}>
                 {/* <Typography variant="caption" sx={fieldCaptionSx}>  */}
                 <Typography variant="subtitle2" sx={fieldLabelSx}>
@@ -982,12 +981,14 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
                   disabled={!canEdit}
                 />
               </Stack>
+
               <Stack spacing={1}>
                 <Typography variant="subtitle2" sx={fieldLabelSx}>
                   የደረሰው ጉዳት መጠን
                 </Typography>
                 <Field.Text name="ip_AmountofDamage" placeholder="መጠን/ብዛት" disabled={!canEdit} />
               </Stack>
+
               <Stack spacing={1}>
                 <Typography variant="subtitle2" sx={fieldLabelSx}>
                   በገንዘብ ሲተመን
@@ -1000,8 +1001,11 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
                   inputProps={{ inputMode: 'numeric', min: 0 }}
                 />
               </Stack>
+
             </Box>
+
           </AccordionDetails>
+
         </Accordion>
 
         {/* <Typography variant="subtitle2" sx={[fieldLabelSx, { pt: '1.5rem', fontSize: '1rem' }]}>
@@ -1073,6 +1077,7 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
           </Stack>
         </Box> */}
       </Stack>
+
     </Card>
   );
 

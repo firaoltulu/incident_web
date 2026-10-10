@@ -101,9 +101,18 @@ export function OrderNewEditForm({ currentWorkFlow, loading }) {
 
   const [status, setStatus] = useState(0);
 
-  const transformStateArray = (arr) => arr.map(item => [item.state._id, item.doc_status, item.only_allow_edit_for._id]);
+  const transformStateArray = (arr) => arr.map(item => [
+    item?.state?._id ?? '',
+    item?.doc_status ?? 0,
+    item?.only_allow_edit_for?._id ?? '',
+  ]);
 
-  const transformTransitionArray = (arr) => arr.map(item => [item.state._id, item.action._id, item.next_state._id, item.allowed._id]);
+  const transformTransitionArray = (arr) => arr.map(item => [
+    item?.state?._id ?? '',
+    item?.action?._id ?? '',
+    item?.next_state?._id ?? '',
+    item?.allowed?._id ?? '',
+  ]);
 
   const defaultValues = useMemo(
     () => ({

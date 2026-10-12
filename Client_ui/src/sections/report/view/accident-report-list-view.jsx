@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
@@ -25,9 +25,11 @@ import TextField from '@mui/material/TextField';
 //   AlignmentType,
 // } from 'docx';
 
+import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import {
   Table,
+  // Table,
   Packer,
   TextRun,
   Document,
@@ -85,6 +87,46 @@ const accident_cause_options = [
   'የመሬት ናዳ',
   'የማሽነሪ ጉዳት',
   'የተሸከርካሪ አደጋ',
+];
+
+const ACCIDENT_SCHEMA_FIELDS = [
+  'incident_date',
+  'incident_time',
+  'specific_location',
+  'human_injury_on_person',
+  'incident_victim_count',
+  'property_damage_type',
+  'cash_damage_type',
+  'damaged_property_type',
+  'damaged_property_quantity',
+  'damaged_property_estimated_value',
+  'ip_damageToOrganizationBrand',
+  'ip_damageToOrganizationDocumentsAndTechnologies',
+  'ip_handingOverOrganizationalPatents',
+  'ip_unauthorizedUsage',
+  'ip_AmountofDamage',
+  'ip_damage_estimated_value',
+  'accident_cause',
+  'accident_victim_injury',
+  'accident_injured_person_count',
+  'accident_property_damage_quantity',
+  'accident_property_damage_estimated_value',
+  'accident_ip_damage_type',
+  'accident_ip_damage_estimated_value',
+  'incident_summary',
+  'perpetrator_type',
+  'legal_action_taken',
+  'administrative_action_taken',
+  'no_action_reason',
+  'suspects_in_custody_count',
+  'suspects_escaped_count',
+  'suspect_unidentified',
+  'follow_up_monitoring_case',
+  'additional_comments',
+  'reporter_name',
+  'reporter_signature',
+  'report_date',
+  'incident_type',
 ];
 
 // ----------------------------------------------------------------------
@@ -303,15 +345,15 @@ export function AccidentReportListView() {
               verticalAlign: VerticalAlign.CENTER,
               children: logoBuffer
                 ? [
-                    new Paragraph({
-                      children: [
-                        new ImageRun({
-                          data: logoBuffer,
-                          transformation: { width: 170, height: 75 },
-                        }),
-                      ],
-                    }),
-                  ]
+                  new Paragraph({
+                    children: [
+                      new ImageRun({
+                        data: logoBuffer,
+                        transformation: { width: 170, height: 75 },
+                      }),
+                    ],
+                  }),
+                ]
                 : [],
             }),
             // Right Column: Title Texts[cite: 1]
@@ -490,38 +532,49 @@ export function AccidentReportListView() {
   //   saveAs(blob, `${incidentCategory}_summary_report.xlsx`);
   // };
   const DEFAULT_VISIBLE_COLUMNS = {
+    ...Object.fromEntries(ACCIDENT_SCHEMA_FIELDS.map((field) => [field, false])),
     id: true,
+    incident_type: true,
     accident_cause: true,
-    IsActive: false,
+    company: true,
+    specific_location: true,
     AddedDate: true,
     // All other fields default to false
-    company: true,
-    state: true,
-    // actionExecutedByInternalStaff: false,
-    // actionExecutedByOutsidePerson: false,
-    // actionTaken: false,
-    amountOfFinancialLoss: false,
-    categories_of_incident: false,
-    damageToOrganizationBrand: false,
-    damage_occurred_to_person: false,
-    date_of_report: false,
-    description: false,
-    estimatedPropertyDamage: false,
-    mainCauseOfIncident: false,
-    numberOfArrestedSuspects: false,
-    numberOfDeaths: false,
-    numberOfEscapedSuspects: false,
-    numberOfInjured: false,
-    numberOfNoneVictims: false,
-    region: false,
-    specificArea: false,
-    statusOfCase: false,
-    town: false,
-    // typeOfSupportExpected: false,
-    // type_of_incident: false,
-    worda: false,
-    zone: false,
-    incident_type: true,
+    incident_date: false,
+    incident_time: false,
+    human_injury_on_person: false,
+    incident_victim_count: false,
+    property_damage_type: false,
+    cash_damage_type: false,
+    damaged_property_type: false,
+    damaged_property_quantity: false,
+    damaged_property_estimated_value: false,
+    ip_damageToOrganizationBrand: false,
+    ip_damageToOrganizationDocumentsAndTechnologies: false,
+    ip_handingOverOrganizationalPatents: false,
+    ip_unauthorizedUsage: false,
+    ip_AmountofDamage: false,
+    ip_damage_estimated_value: false,
+    accident_victim_injury: false,
+    accident_injured_person_count: false,
+    accident_property_damage_quantity: false,
+    accident_property_damage_estimated_value: false,
+    accident_ip_damage_type: false,
+    accident_ip_damage_estimated_value: false,
+    incident_summary: false,
+    perpetrator_type: false,
+    administrative_action_taken: false,
+    no_action_reason: false,
+    suspects_in_custody_count: false,
+    suspects_escaped_count: false,
+    suspect_unidentified: false,
+    follow_up_monitoring_case: false,
+    additional_comments: false,
+    reporter_name: false,
+    report_date: false,
+    IsActive: false,
+    state: false,
+    // company: true,
   };
   // const DEFAULT_VISIBLE_COLUMNS = {
   //   id: true,
@@ -581,6 +634,15 @@ export function AccidentReportListView() {
     incidentType,
     incidentCategory,
   });
+
+  const handleDeleteRows = useCallback(() => {
+    const selectedIds = new Set(selectedRowIds);
+
+    setTableData((currentRows) => currentRows.filter((row) => !selectedIds.has(row.id)));
+    setSelectedRowIds([]);
+    toast.success('Delete success!');
+  }, [selectedRowIds]);
+
   // *************************8
   const reportData = [];
 
@@ -625,59 +687,10 @@ export function AccidentReportListView() {
       });
     });
   }
-  // *************************8
+  // *************************86
 
-  const handleDeleteRows = useCallback(() => {
-    const deleteRows = tableData.filter((row) => !selectedRowIds.includes(row.id));
-
-    toast.success('Delete success!');
-
-    setTableData(deleteRows);
-  }, [selectedRowIds, tableData]);
-
-  const CustomToolbarCallback = useCallback(
-    () => (
-      <CustomToolbar
-        filters={filters}
-        canReset={canReset}
-        selectedRowIds={selectedRowIds}
-        setFilterButtonEl={setFilterButtonEl}
-        filteredResults={dataFiltered.length}
-        onOpenConfirmDeleteRows={confirmRows.onTrue}
-        startDate={startDate}
-        endDate={endDate}
-        setStartDate={setStartDate}
-        setEndDate={setEndDate}
-        incidentType={incidentType}
-        setIncidentType={setIncidentType}
-        incidentCategory={incidentCategory}
-        setIncidentCategory={setIncidentCategory}
-        handleExportSummaryReport={handleExportSummaryReport}
-      />
-    ),
-
-    [
-      // filters.state,
-      // selectedRowIds,
-      // startDate,
-      // endDate,
-      // incidentType,
-      // incidentCategory,
-      //
-      filters,
-      canReset,
-      selectedRowIds,
-      dataFiltered.length,
-      confirmRows.onTrue,
-      startDate,
-      endDate,
-      incidentType,
-      incidentCategory,
-      handleExportSummaryReport,
-    ]
-  );
-
-  const columns = [
+  const columns = useMemo(() => {
+    const configuredColumns = [
     {
       field: 'id',
       headerName: 'Id',
@@ -929,7 +942,98 @@ export function AccidentReportListView() {
       width: 160,
       renderCell: (params) => <RenderCellCreatedAt params={params} />,
     },
-  ];
+    ];
+
+    const configuredFields = new Set(configuredColumns.map((column) => column.field));
+    const schemaColumns = ACCIDENT_SCHEMA_FIELDS.filter(
+      (field) => !configuredFields.has(field)
+    ).map((field) => ({
+      field,
+      headerName: field
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/_/g, ' ')
+        .replace(/^./, (character) => character.toUpperCase()),
+      flex: 1,
+      minWidth: 220,
+      hideable: true,
+    }));
+
+    return [...configuredColumns, ...schemaColumns];
+  }, []);
+
+  const handleExportExcel = useCallback(() => {
+    const visibleColumns = columns.filter(
+      (col) => columnVisibilityModel[col.field] !== false
+    );
+
+    const exportData = dataFiltered.map((row) => {
+      const exportRow = {};
+      visibleColumns.forEach((col) => {
+        let value;
+        if (col.field === 'damage_estimated_value') {
+          value = row.incident_type === 'አደጋ'
+            ? row.accident_property_damage_estimated_value
+            : row.damaged_property_estimated_value;
+        } else if (col.valueGetter) {
+          value = col.valueGetter({ row });
+        } else {
+          value = row[col.field];
+        }
+        exportRow[col.headerName] = value;
+      });
+      return exportRow;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Accident Report');
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array',
+    });
+
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    saveAs(blob, `accident_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }, [columns, columnVisibilityModel, dataFiltered]);
+
+  const CustomToolbarCallback = useCallback(
+    () => (
+      <CustomToolbar
+        filters={filters}
+        canReset={canReset}
+        selectedRowIds={selectedRowIds}
+        setFilterButtonEl={setFilterButtonEl}
+        filteredResults={dataFiltered.length}
+        onOpenConfirmDeleteRows={confirmRows.onTrue}
+        startDate={startDate}
+        endDate={endDate}
+        setStartDate={setStartDate}
+        setEndDate={setEndDate}
+        incidentType={incidentType}
+        setIncidentType={setIncidentType}
+        incidentCategory={incidentCategory}
+        setIncidentCategory={setIncidentCategory}
+        handleExportSummaryReport={handleExportSummaryReport}
+        handleExportExcel={handleExportExcel}
+      />
+    ),
+    [
+      filters,
+      canReset,
+      selectedRowIds,
+      dataFiltered.length,
+      confirmRows.onTrue,
+      startDate,
+      endDate,
+      incidentType,
+      incidentCategory,
+      handleExportSummaryReport,
+      handleExportExcel,
+    ]
+  );
 
   const getTogglableColumns = () =>
     columns
@@ -965,7 +1069,6 @@ export function AccidentReportListView() {
               noResultsOverlay: () => <EmptyContent title="No results found" />,
             }}
             slotProps={{
-              panel: { anchorEl: filterButtonEl },
               toolbar: { setFilterButtonEl },
               columnsManagement: { getTogglableColumns },
             }}
@@ -1019,6 +1122,7 @@ function CustomToolbar({
   incidentCategory,
   setIncidentCategory,
   handleExportSummaryReport,
+  handleExportExcel,
 }) {
   return (
     <>
@@ -1176,9 +1280,17 @@ function CustomToolbar({
             >
               Summary Report
             </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handleExportExcel}
+              sx={{ marginRight: 1 }}
+            >
+              Download Excel
+            </Button>
             <GridToolbarColumnsButton />
             {/* <GridToolbarFilterButton ref={setFilterButtonEl} /> */}
-            <GridToolbarExport />
+            {/* <GridToolbarExport /> */}
           </Box>
         </Stack>
       </GridToolbarContainer>

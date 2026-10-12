@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
@@ -48,7 +48,7 @@ import { DateTimePicker } from '@mui/x-date-pickers';
 import {
   DataGrid,
   gridClasses,
-  GridToolbarExport,
+  // GridToolbarExport,
   GridToolbarContainer,
   GridToolbarQuickFilter,
   GridToolbarColumnsButton,
@@ -147,7 +147,7 @@ export function AccidentReportListView() {
 
   const [selectedRowIds, setSelectedRowIds] = useState([]);
 
-  const [filterButtonEl, setFilterButtonEl] = useState(null);
+  const filterButtonEl = useRef(null);
   // console.log('***********************');
   // console.log(accidents);
   // console.log('***********************');
@@ -1005,7 +1005,7 @@ export function AccidentReportListView() {
         filters={filters}
         canReset={canReset}
         selectedRowIds={selectedRowIds}
-        setFilterButtonEl={setFilterButtonEl}
+        filterButtonEl={filterButtonEl}
         filteredResults={dataFiltered.length}
         onOpenConfirmDeleteRows={confirmRows.onTrue}
         startDate={startDate}
@@ -1069,7 +1069,7 @@ export function AccidentReportListView() {
               noResultsOverlay: () => <EmptyContent title="No results found" />,
             }}
             slotProps={{
-              toolbar: { setFilterButtonEl },
+              panel: { anchorEl: filterButtonEl.current, placement: 'bottom-end' },
               columnsManagement: { getTogglableColumns },
             }}
             sx={{ [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' } }}
@@ -1110,8 +1110,8 @@ function CustomToolbar({
   filters,
   canReset,
   selectedRowIds,
+  filterButtonEl,
   filteredResults,
-  setFilterButtonEl,
   onOpenConfirmDeleteRows,
   startDate,
   endDate,
@@ -1288,8 +1288,8 @@ function CustomToolbar({
             >
               Download Excel
             </Button>
-            <GridToolbarColumnsButton />
-            {/* <GridToolbarFilterButton ref={setFilterButtonEl} /> */}
+            <GridToolbarColumnsButton ref={filterButtonEl} />
+            {/* <GridToolbarFilterButton /> */}
             {/* <GridToolbarExport /> */}
           </Box>
         </Stack>

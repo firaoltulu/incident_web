@@ -29,6 +29,7 @@ const { getAllButtons } = require("../../models/button/Button.model");
 
 
 const ACCIDENT_MODULE_ID = process.env.ACCIDENT_MODULE_ID;
+const USER_ROLE_ADMIN = process.env.USER_ROLE_ADMIN;
 
 
 async function httpAddNewAccident(req, res) {
@@ -85,7 +86,7 @@ async function httpListAccident(req, res) {
 
         const userRoles = body.user.Roles.map((row) => String(row._id))
 
-        if (!userRoles.includes('69afda7ce222d7d9af50ab1c')) {
+        if (!userRoles.includes(USER_ROLE_ADMIN)) {
             const response = await getAllCompanyAccident(0, 0, body?.user?.Company);
             return res.status(200).json({ message: "Accident get was successful!!", reason: 1, accidents: response });
         }

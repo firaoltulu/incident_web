@@ -1,0 +1,3 @@
+
+
+mongorestore --uri="mongodb://localhost:27018/" "D:\Projects\incident web\incident web\dump"

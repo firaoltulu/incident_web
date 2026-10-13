@@ -4,7 +4,7 @@ import { CONFIG } from 'src/config-global';
 
 import { AccidentListView } from 'src/sections/accident/view';
 
-// ----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 
 const metadata = { title: `Accident list | Dashboard - ${CONFIG.site.name}` };
 

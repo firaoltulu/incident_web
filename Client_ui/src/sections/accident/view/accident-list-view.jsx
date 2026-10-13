@@ -4,6 +4,7 @@ import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import Tabs from '@mui/material/Tabs';
 import Card from '@mui/material/Card';
+import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
@@ -11,6 +12,8 @@ import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
@@ -88,7 +91,7 @@ export function AccidentListView() {
     index: table.page,
     step: table.rowsPerPage,
   });
-  const { workflows, workflowsLoading } = useWorkflowContext();
+  const { workflows } = useWorkflowContext();
   const [docWorkFlow, setDocWorkFlow] = useState(null);
 
   const [statusOptions, setStatusOptions] = useState([{ value: 'all', label: 'All' }]);
@@ -98,10 +101,10 @@ export function AccidentListView() {
   const [tableData, setTableData] = useState([]);
 
   useEffect(() => {
-    if (accidents.length && !workflowsLoading && docWorkFlow !== null) {
+    if (!accidentsLoading) {
       setTableData(accidents);
     }
-  }, [accidents, workflowsLoading, docWorkFlow]);
+  }, [accidents, accidentsLoading]);
 
   useEffect(() => {
     const found = workflows.find((row) => row.Module._id);
@@ -145,7 +148,7 @@ export function AccidentListView() {
     filters: filters.state,
     dateError,
   });
-  console.log(dataFiltered);
+  // console.log(dataFiltered);
   const dataInPage = rowInPage(dataFiltered, table.page, table.rowsPerPage);
 
   const canReset =
@@ -153,7 +156,7 @@ export function AccidentListView() {
     filters.state.status !== 'all' ||
     (!!filters.state.startDate && !!filters.state.endDate);
 
-  const notFound = (accidentsLoading && !dataFiltered.length && canReset) || !dataFiltered.length;
+  const notFound = !accidentsLoading && !dataFiltered.length;
 
   const handleDeleteRow = useCallback(
     (id) => {
@@ -305,35 +308,43 @@ export function AccidentListView() {
                 />
 
                 <TableBody>
-                  {dataFiltered
-                    .slice(
-                      table.page * table.rowsPerPage,
-                      table.page * table.rowsPerPage + table.rowsPerPage
-                    )
-                    .map((row, index) => (
-                      <AccidentTableRow
-                        key={index}
-                        row={row}
-                        selected={table.selected.includes(row._id)}
-                        onSelectRow={() => table.onSelectRow(row._id)}
-                        onDeleteRow={() => handleDeleteRow(row._id)}
-                        onViewRow={() => handleViewRow(row._id)}
+                  {accidentsLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={TABLE_HEAD.length} sx={{ height: 240 }}>
+                        <Stack alignItems="center" justifyContent="center" spacing={2} role="status">
+                          <CircularProgress size={32} />
+                          <Typography variant="body2" color="text.secondary">
+                            Loading accidents...
+                          </Typography>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <>
+                      {dataFiltered
+                        .slice(
+                          table.page * table.rowsPerPage,
+                          table.page * table.rowsPerPage + table.rowsPerPage
+                        )
+                        .map((row, index) => (
+                          <AccidentTableRow
+                            key={index}
+                            row={row}
+                            selected={table.selected.includes(row._id)}
+                            onSelectRow={() => table.onSelectRow(row._id)}
+                            onDeleteRow={() => handleDeleteRow(row._id)}
+                            onViewRow={() => handleViewRow(row._id)}
+                          />
+                        ))}
+
+                      <TableEmptyRows
+                        height={table.dense ? 56 : 56 + 20}
+                        emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
                       />
-                    ))}
 
-                  <TableEmptyRows
-                    height={table.dense ? 56 : 56 + 20}
-                    emptyRows={emptyRows(table.page, table.rowsPerPage, dataFiltered.length)}
-                  />
-
-                  <TableNoData notFound={notFound} />
-                  <TableRow>
-                    {accidentsLoading ? (
-                      <TableCell colSpan={12}>Loading</TableCell>
-                    ) : (
-                      <TableCell colSpan={12} sx={{ p: 0 }} />
-                    )}
-                  </TableRow>
+                      <TableNoData notFound={notFound} />
+                    </>
+                  )}
                 </TableBody>
               </Table>
             </Scrollbar>

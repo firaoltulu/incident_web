@@ -64,10 +64,10 @@ export function OrderListView() {
   const [columnVisibilityModel, setColumnVisibilityModel] = useState(HIDE_COLUMNS);
 
   useEffect(() => {
-    if (workflows.length) {
+    if (!workflowsLoading) {
       setTableData(workflows);
     }
-  }, [workflows]);
+  }, [workflows, workflowsLoading]);
 
   const canReset = filters.state.publish.length > 0 || filters.state.stock.length > 0;
 

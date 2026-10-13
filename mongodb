@@ -1,3 +1,18 @@
 
 
 mongorestore --uri="mongodb://localhost:27018/" "D:\Projects\incident web\incident web\dump"
+
+
+docker compose up  
+
+docker compose build --no-cache client  
+
+docker compose up -V 
+
+docker compose build --no-cache api  
+
+docker compose down  
+
+docker-compose down -v                                                  
+
+docker compose up --build -V  

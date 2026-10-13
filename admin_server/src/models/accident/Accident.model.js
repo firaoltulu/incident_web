@@ -4,7 +4,7 @@ const uuid = require('uuid');
 const ACCIDENT_DATA_FIELDS = [
     'incident_date', 'incident_time',
     // 'region', 'zone', 'city', 'woreda',
-     'specific_location',
+    'specific_location',
     'human_injury_on_person', 'incident_victim_count',
     'property_damage_type', 'cash_damage_type',
     'damaged_property_type', 'damaged_property_quantity', 'damaged_property_estimated_value',
@@ -18,7 +18,7 @@ const ACCIDENT_DATA_FIELDS = [
     'administrative_action_taken', 'no_action_reason',
     'suspects_in_custody_count', 'suspects_escaped_count', 'suspect_unidentified',
     'follow_up_monitoring_case', 'additional_comments',
-    'reporter_name', 'reporter_signature', 'report_date','incident_type',
+    'reporter_name', 'reporter_signature', 'report_date', 'incident_type',
 ];
 
 function pickAccidentFields(source) {
@@ -111,11 +111,6 @@ async function AddNewAccident(body = null) {
         company: body.company,
         stateHistory: body.stateHistory || [],
     };
-      console.log("**********");
-      
-      console.log(body);
-      console.log("**********");
-    
 
     const response = await saveAccident(newLaunch);
 

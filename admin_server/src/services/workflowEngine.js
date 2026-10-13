@@ -55,11 +55,12 @@ function getAvailableWorkflowActions({
 function canEditDocument({ workflow, stateId, userRoles }) {
     const roleIds = convertUserRolesToIds(userRoles);
 
-    const states = workflow?.States.filter(
-        s => String(s.state._id) === String(stateId)
+    const states = (Array.isArray(workflow?.States) ? workflow.States : []).filter(
+        s => s?.state?._id != null && String(s.state._id) === String(stateId)
     )
 
     if (states?.length === 0) return false
+    if (states.some(s => [1, 2].includes(Number(s.doc_status)))) return false
 
     return states?.some(s =>
         roleIds.includes(String(s.only_allow_edit_for?._id))

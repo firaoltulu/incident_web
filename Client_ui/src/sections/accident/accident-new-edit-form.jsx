@@ -483,11 +483,21 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
   const { buttons, buttonsLoading } = useButtonContext();
   const { user } = useAuthContext();
 
-  const [docWorkFlow, setDocWorkFlow] = useState(null);
+  const docWorkFlow = Array.isArray(workflows)
+    ? workflows.find((row) => String(row.Module?._id) === String(ACCIDENT_MODULE_ID))
+    : null;
   const [actions, setActions] = useState([]);
-  const [canEdit, setCanEdit] = useState(true);
   const [actionLoading, setActionLoading] = useState({});
   const [incidentType, setIncidentType] = useState(currentAccident?.incident_type || 'ወንጀል');
+  const canEdit =
+    !currentAccident ||
+    (!workflowsLoading &&
+      (!docWorkFlow ||
+        canEditDocument({
+          workflow: docWorkFlow,
+          stateId: currentAccident.state?._id,
+          userRoles: user?.Roles || [],
+        })));
 
   const defaultValues = useMemo(
     () => ({
@@ -546,7 +556,6 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
     [currentAccident]
   );
 
-
   const methods = useForm({
     mode: 'all',
     resolver: zodResolver(AccidentSchema),
@@ -588,37 +597,25 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
   } = methods;
 
   useEffect(() => {
-    if (currentAccident && !workflowsLoading && !buttonsLoading && docWorkFlow !== null) {
+    if (currentAccident && !workflowsLoading && !buttonsLoading && docWorkFlow) {
       const found_actions = getAvailableWorkflowActions({
         workflow: docWorkFlow,
         currentStateId: currentAccident.state._id,
-        userRoles: user.Roles,
+        userRoles: user?.Roles || [],
         actions: buttons,
       });
 
-      const found_can_edit = canEditDocument({
-        workflow: docWorkFlow,
-        stateId: currentAccident.state._id,
-        userRoles: user.Roles,
-      });
-
       setActions(found_actions);
-      setCanEdit(found_can_edit);
     }
   }, [
     currentAccident,
     ACCIDENT_MODULE_ID,
     buttons,
     docWorkFlow,
-    user.Roles,
+    user?.Roles,
     workflowsLoading,
     buttonsLoading,
   ]);
-
-  useEffect(() => {
-    const found = workflows.find((row) => row.Module._id);
-    setDocWorkFlow(found);
-  }, [workflows]);
 
   useEffect(() => {
     if (currentAccident && !workflowsLoading && !buttonsLoading) {
@@ -1496,7 +1493,7 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
                 <Tab
                   label="ወንጀል"
                   value="ወንጀል"
-                  // disabled={currentAccident?.incident_type}
+                  disabled={!canEdit}
                   sx={{
                     fontSize: '1.2rem',
                     borderRadius: '8px',
@@ -1510,7 +1507,7 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
                 <Tab
                   label="አደጋ"
                   value="አደጋ"
-                  // disabled={currentAccident?.incident_type}
+                  disabled={!canEdit}
                   sx={{
                     fontSize: '1.2rem',
                     borderRadius: '8px',

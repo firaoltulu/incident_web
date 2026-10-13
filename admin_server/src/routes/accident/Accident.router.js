@@ -1,5 +1,5 @@
 const express = require("express");
-// var { graphqlHTTP } = require('express-graphql');
+/// var { graphqlHTTP } = require('express-graphql');
 
 const {
     httpAddNewAccident,

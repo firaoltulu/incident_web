@@ -133,7 +133,6 @@ async function httpEditAccidentState(req, res) {
         const { accidentId } = req.params;
 
         console.log(accidentId);
-        console.log({ body });
         const exists_WorkFlow = await existsWorkFlowWithModuleId(ACCIDENT_MODULE_ID);
         const all_actions = await getAllButtons();
 
@@ -286,84 +285,6 @@ async function httpEditAccident(req, res) {
         return res.status(400).json({ message: "Required fields not specfied", reason: 7, accident: null });
     }
 };
-
-
-
-// async function httpListGroupCompany(req, res) {
-
-//     try {
-
-//         const body = req.body;
-
-//         // const { index, step } = req.query;
-//         // const pagination = getPagination({ page: index, limit: step });
-
-//         const response = await getAllCompany();
-
-//         var new_arr = response.filter((item) => {
-
-//             if (item.IsGroup === true) {
-//                 var new_obj = Object.assign({
-//                     id: item.CompanyID,
-//                     ...item._doc
-//                 });
-//                 return new_obj;
-//             }
-
-//         })
-
-//         if (response) {
-//             return res.status(200).json({ message: "Company get was successful!!", reason: 1, companies: new_arr });
-//         } else {
-//             return res.status(400).json({ message: "Error Please Try again", reason: 2, companies: [] });
-//         }
-
-//     } catch (error) {
-//         return res.status(400).json({ message: "Error Please Try again", reason: 3, companies: [] });
-//     }
-
-// };
-
-
-// async function httpEditCompany(req, res) {
-
-//     try {
-//         const body = req.body;
-
-//         const { companyId } = req.params;
-
-//         if (body.name != "" && body.description != "" && companyId != "") {
-
-//             const editCompany = Object.assign({}, {
-//                 Name: body.name,
-//                 Description: body.description,
-//                 IsActive: body?.isActive !== void (0) ? body.isActive : true,
-//                 IsGroup: body.isGroup.enabled,
-//                 ParentGroup: body.parentGroup,
-//                 IsBanned: body?.isBanned !== void (0) ? body.isBanned : false,
-//             });
-
-//             const companyExists = await EditCompanyById(companyId, editCompany);
-
-//             if (companyExists.done === true) {
-//                 return res.status(200).json({ message: "Company successfully edited", reason: 1, company: companyExists.company });
-//             }
-//             else {
-//                 return res.status(400).json({ message: "Required fields not specfied", reason: 2, company: null });
-//             }
-
-//         }
-//         else {
-//             return res.status(400).json({ message: "Required fields not specfied", reason: 3, company: null });
-
-//         }
-
-//     } catch (error) {
-//         return res.status(400).json({ message: "Error Please Try again", reason: 3, company: null });
-//     }
-// };
-
-
 
 
 module.exports = {

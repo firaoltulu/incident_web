@@ -12,15 +12,18 @@ const {
     httpActiveAuthorization
 } = require("./Authorization.controller");
 
+const { authenticate } = require("../../lib/verifytoken");
+const { authorize } = require("../../lib/authorize");
+
 const AuthorizationRouter = express.Router();
 
-
 AuthorizationRouter.post("/sign-in", httpLoginAuthorization);
+AuthorizationRouter.post("/register", httpRegisterNewAccountAuthorization);
 
+AuthorizationRouter.use(authenticate);
+// AuthorizationRouter.use(authorize(process.env.USER_MODULE_KEY));
 
 AuthorizationRouter.get("/me", httpMy_accountAuthorization);
-
-AuthorizationRouter.post("/register", httpRegisterNewAccountAuthorization);
 AuthorizationRouter.get("/list", httpListUsersAuthorization);
 AuthorizationRouter.get("/details/:userId", httpGetUserAuthorization);
 AuthorizationRouter.put("/edit/:userId", httpEditUserAuthorization);

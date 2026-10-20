@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import Card from '@mui/material/Card';
+import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import CardHeader from '@mui/material/CardHeader';
@@ -35,9 +36,14 @@ export const NewRoleSchema = zod
       .optional()
       .refine((v) => v === undefined || Array.isArray(v), { message: 'Modules is required!' }),
   });
+
+const ADMINISTRATOR_ROLE_ID = '69afda7ce222d7d9af50ab1c';
+
 export function TourNewEditForm({ currentRole }) {
   const router = useRouter();
   // const URL = CONFIG.site.serverUrl;
+  const isProtectedRole =
+    String(currentRole?.id || currentRole?._id || '') === ADMINISTRATOR_ROLE_ID;
 
   const [groupModules, setGroupModules] = useState([]);
   const [reload, setReload] = useState(false);
@@ -124,12 +130,20 @@ export function TourNewEditForm({ currentRole }) {
       <Stack spacing={3} sx={{ p: 3 }}>
         <Stack spacing={1.5}>
           <Typography variant="subtitle2">Name</Typography>
-          <Field.Text name="name" placeholder="Ex: Approver, Head of Department..." />
+          <Field.Text
+            name="name"
+            placeholder="Ex: Approver, Head of Department..."
+            disabled={isProtectedRole}
+          />
         </Stack>
 
         <Stack spacing={1.5}>
           <Typography variant="subtitle2">Description</Typography>
-          <Field.Text name="description" placeholder="Ex: a user assign this role..." />
+          <Field.Text
+            name="description"
+            placeholder="Ex: a user assign this role..."
+            disabled={isProtectedRole}
+          />
         </Stack>
 
         <Stack direction="row" alignItems="center" spacing={3}>
@@ -156,6 +170,7 @@ export function TourNewEditForm({ currentRole }) {
           name="modules"
           multiple
           autoHighlight
+          disabled={isProtectedRole}
           isOptionEqualToValue={(option, value) => option?.value === value?.value}
           options={groupModules.map((state) => ({ label: state.label, value: state.value }))}
           getOptionLabel={(option) => option.label}
@@ -181,6 +196,7 @@ export function TourNewEditForm({ currentRole }) {
         size="large"
         loading={isSubmitting}
         sx={{ ml: 2 }}
+        disabled={isProtectedRole}
       >
         {!currentRole ? 'Create Role' : 'Save changes'}
       </LoadingButton>
@@ -191,6 +207,11 @@ export function TourNewEditForm({ currentRole }) {
 
     <Form methods={methods} onSubmit={onSubmit}>
       <Stack spacing={{ xs: 3, md: 5 }} sx={{ mx: 'auto', maxWidth: { xs: 720, xl: 880 } }}>
+        {isProtectedRole && (
+          <Alert severity="info">
+            The Administrator role is protected and cannot be edited.
+          </Alert>
+        )}
         {renderDetails}
 
         {renderProperties}

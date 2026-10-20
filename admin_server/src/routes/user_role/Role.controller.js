@@ -19,6 +19,7 @@ const { getPagination } = require("../../services/query");
 
 const { NewRoleSchema } = require("../../schema/RoleSchema");
 
+const ADMINISTRATOR_ROLE_ID = "69afda7ce222d7d9af50ab1c";
 
 function extractModuleValues(modules) {
     return modules.map(module => module.value);
@@ -113,6 +114,13 @@ async function httpEditRole(req, res) {
 
         const { roleId } = req.params;
 
+        if (roleId === ADMINISTRATOR_ROLE_ID) {
+            return res.status(403).json({
+                message: "The Administrator role cannot be edited",
+                role: null,
+            });
+        }
+
         const result = NewRoleSchema.safeParse(body);
 
         if (result.success) {
@@ -191,5 +199,4 @@ module.exports = {
     // httpGetCompany,
     // httpEditCompany
 };
-
 

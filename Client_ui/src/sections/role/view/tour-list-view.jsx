@@ -43,6 +43,7 @@ import {
 const HIDE_COLUMNS = { category: false };
 
 const HIDE_COLUMNS_TOGGLABLE = ['category', 'actions'];
+const ADMINISTRATOR_ROLE_ID = '69afda7ce222d7d9af50ab1c';
 
 // ----------------------------------------------------------------------
 
@@ -169,6 +170,7 @@ export function TourListView() {
           showInMenu
           icon={<Iconify icon="solar:pen-bold" />}
           label="Edit"
+          disabled={String(params.row.id) === ADMINISTRATOR_ROLE_ID}
           onClick={() => handleEditRow(params.row.id)}
         />,
         // <GridActionsCellItem

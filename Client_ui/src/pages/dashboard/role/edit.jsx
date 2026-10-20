@@ -7,7 +7,7 @@ import { useGetRole } from 'src/actions/role';
 
 import { TourEditView } from 'src/sections/role/view';
 
-// ----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 
 const metadata = { title: `Role edit | Dashboard - ${CONFIG.site.name}` };
 

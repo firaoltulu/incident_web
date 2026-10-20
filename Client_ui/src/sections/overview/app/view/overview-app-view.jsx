@@ -1,11 +1,15 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import Grid from '@mui/material/Unstable_Grid2';
 import { useTheme } from '@mui/material/styles';
 import CardHeader from '@mui/material/CardHeader';
+import InputLabel from '@mui/material/InputLabel';
 import Typography from '@mui/material/Typography';
+import FormControl from '@mui/material/FormControl';
 import LinearProgress from '@mui/material/LinearProgress';
 
 import { fNumber } from 'src/utils/format-number';
@@ -23,6 +27,10 @@ import { AppWelcome } from '../app-welcome';
 const INCIDENT_ACCIDENT = 'አደጋ';
 const INCIDENT_CRIME = 'ወንጀል';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = Array.from({ length: 12 }, (_, month) =>
+  new Intl.DateTimeFormat('en', { month: 'long' }).format(new Date(2020, month, 1))
+);
+const ALL_MONTHS = 'all';
 
 function getAccidentDate(accident) {
   const dateValues = [
@@ -265,34 +273,53 @@ export function OverviewAppView() {
   const { user } = useAuthContext();
   const theme = useTheme();
   const { accidents = [], accidentsLoading } = useGetAccident();
+  const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()));
+  const [selectedMonth, setSelectedMonth] = useState(ALL_MONTHS);
+
+  const availableYears = useMemo(() => {
+    const years = new Set([new Date().getFullYear()]);
+    accidents.forEach((accident) => {
+      const date = getAccidentDate(accident);
+      if (date) {
+        years.add(date.getFullYear());
+      }
+    });
+    return [...years].sort((a, b) => b - a);
+  }, [accidents]);
+
+  const periodLabel =
+    selectedMonth === ALL_MONTHS
+      ? selectedYear
+      : `${MONTHS[Number(selectedMonth)]} ${selectedYear}`;
 
   const insights = useMemo(() => {
-    const now = new Date();
-    const recentMonths = Array.from({ length: 12 }, (_, index) =>
-      new Date(now.getFullYear(), now.getMonth() - 11 + index, 1)
-    );
-    const monthIndexByKey = new Map(
-      recentMonths.map((date, index) => [`${date.getFullYear()}-${date.getMonth()}`, index])
-    );
-    const monthLabels = recentMonths.map((date) =>
-      new Intl.DateTimeFormat('en', { month: 'short', year: '2-digit' }).format(date)
-    );
+    const year = Number(selectedYear);
+    const month = selectedMonth === ALL_MONTHS ? null : Number(selectedMonth);
+    const daysInMonth = month === null ? 0 : new Date(year, month + 1, 0).getDate();
+    const periodLabels =
+      month === null
+        ? MONTHS.map((monthName) => monthName.slice(0, 3))
+        : Array.from({ length: daysInMonth }, (_, index) => String(index + 1));
     const monthlyByType = {
-      [INCIDENT_ACCIDENT]: Array(recentMonths.length).fill(0),
-      [INCIDENT_CRIME]: Array(recentMonths.length).fill(0),
-      Other: Array(recentMonths.length).fill(0),
+      [INCIDENT_ACCIDENT]: Array(periodLabels.length).fill(0),
+      [INCIDENT_CRIME]: Array(periodLabels.length).fill(0),
+      Other: Array(periodLabels.length).fill(0),
     };
     const monthlyLossByType = {
-      [INCIDENT_ACCIDENT]: Array(recentMonths.length).fill(0),
-      [INCIDENT_CRIME]: Array(recentMonths.length).fill(0),
-      Other: Array(recentMonths.length).fill(0),
+      [INCIDENT_ACCIDENT]: Array(periodLabels.length).fill(0),
+      [INCIDENT_CRIME]: Array(periodLabels.length).fill(0),
+      Other: Array(periodLabels.length).fill(0),
     };
+    const periodAccidents = accidents.filter((accident) => {
+      const date = getAccidentDate(accident);
+      return date && date.getFullYear() === year && (month === null || date.getMonth() === month);
+    });
     const companyCounts = new Map();
     const companyLosses = new Map();
     const weekdayCounts = Array(7).fill(0);
     let estimatedLoss = 0;
 
-    accidents.forEach((accident) => {
+    periodAccidents.forEach((accident) => {
       const type = getIncidentType(accident);
       const company = getCompanyName(accident);
       const loss = getEstimatedLoss(accident);
@@ -301,29 +328,24 @@ export function OverviewAppView() {
       companyCounts.set(company, (companyCounts.get(company) || 0) + 1);
       companyLosses.set(company, (companyLosses.get(company) || 0) + loss);
       estimatedLoss += loss;
-
-      if (date) {
-        const monthIndex = monthIndexByKey.get(`${date.getFullYear()}-${date.getMonth()}`);
-        if (monthIndex !== undefined) {
-          monthlyByType[type][monthIndex] += 1;
-          monthlyLossByType[type][monthIndex] += loss;
-        }
-        weekdayCounts[date.getDay()] += 1;
-      }
+      const periodIndex = month === null ? date.getMonth() : date.getDate() - 1;
+      monthlyByType[type][periodIndex] += 1;
+      monthlyLossByType[type][periodIndex] += loss;
+      weekdayCounts[date.getDay()] += 1;
     });
 
-    const typeCounts = countBy(accidents, getIncidentType);
-    const accidentRecords = accidents.filter(
+    const typeCounts = countBy(periodAccidents, getIncidentType);
+    const accidentRecords = periodAccidents.filter(
       (accident) => getIncidentType(accident) === INCIDENT_ACCIDENT
     );
-    const crimeRecords = accidents.filter(
+    const crimeRecords = periodAccidents.filter(
       (accident) => getIncidentType(accident) === INCIDENT_CRIME
     );
     const causeCounts = countBy(
       accidentRecords,
       (accident) => accident.accident_cause || 'Not specified'
     );
-    const injuryCounts = countBy(accidents, (accident) =>
+    const injuryCounts = countBy(periodAccidents, (accident) =>
       getIncidentType(accident) === INCIDENT_ACCIDENT
         ? accident.accident_victim_injury || 'Not specified'
         : accident.human_injury_on_person || 'Not specified'
@@ -337,14 +359,14 @@ export function OverviewAppView() {
     const weekdayEntries = WEEKDAYS.map((day, index) => [day, weekdayCounts[index]]);
 
     return {
-      total: accidents.length,
+      total: periodAccidents.length,
       accidentCount: accidentRecords.length,
       crimeCount: crimeRecords.length,
       companyCount: companyCounts.size,
       estimatedLoss,
       typeLabels: typeCounts.map(([label]) => label),
       typeValues: typeCounts.map(([, value]) => value),
-      monthLabels,
+      periodLabels,
       monthlySeries: Object.entries(monthlyByType).map(([name, data]) => ({ name, data })),
       monthlyLossSeries: Object.entries(monthlyLossByType).map(([name, data]) => ({ name, data })),
       companyItems: topCompanies.map(([label, value]) => ({ label, value })),
@@ -357,7 +379,7 @@ export function OverviewAppView() {
       injuryItems: injuryCounts.map(([label, value]) => ({ label, value })),
       weekdayItems: weekdayEntries.map(([label, value]) => ({ label, value })),
     };
-  }, [accidents]);
+  }, [accidents, selectedMonth, selectedYear]);
 
   return (
     <DashboardContent maxWidth="xl">
@@ -370,11 +392,56 @@ export function OverviewAppView() {
           />
         </Grid>
 
+        <Grid xs={12}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: { xs: 'stretch', sm: 'flex-end' },
+              gap: 2,
+              flexDirection: { xs: 'column', sm: 'row' },
+            }}
+          >
+            <FormControl size="small" sx={{ width: { xs: 1, sm: 'auto' }, minWidth: { sm: 150 } }}>
+              <InputLabel id="overview-year-label">Year</InputLabel>
+              <Select
+                labelId="overview-year-label"
+                id="overview-year"
+                value={selectedYear}
+                label="Year"
+                onChange={(event) => setSelectedYear(event.target.value)}
+              >
+                {availableYears.map((year) => (
+                  <MenuItem key={year} value={String(year)}>
+                    {year}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ width: { xs: 1, sm: 'auto' }, minWidth: { sm: 180 } }}>
+              <InputLabel id="overview-month-label">Month</InputLabel>
+              <Select
+                labelId="overview-month-label"
+                id="overview-month"
+                value={selectedMonth}
+                label="Month"
+                onChange={(event) => setSelectedMonth(event.target.value)}
+              >
+                <MenuItem value={ALL_MONTHS}>All months</MenuItem>
+                {MONTHS.map((month, index) => (
+                  <MenuItem key={month} value={String(index)}>
+                    {month}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </Grid>
+
         <Grid xs={12} sm={6} lg={3}>
           <SummaryMetric
             title="Total reports"
             value={accidentsLoading ? '—' : fNumber(insights.total)}
-            caption="All recorded incident reports"
+            caption={`Reports in ${periodLabel}`}
             color={theme.palette.primary.main}
           />
         </Grid>
@@ -382,7 +449,7 @@ export function OverviewAppView() {
           <SummaryMetric
             title="Accident reports"
             value={accidentsLoading ? '—' : fNumber(insights.accidentCount)}
-            caption={INCIDENT_ACCIDENT}
+            caption={`${INCIDENT_ACCIDENT} reports in ${periodLabel}`}
             color={theme.palette.warning.main}
           />
         </Grid>
@@ -390,7 +457,7 @@ export function OverviewAppView() {
           <SummaryMetric
             title="Crime reports"
             value={accidentsLoading ? '—' : fNumber(insights.crimeCount)}
-            caption={INCIDENT_CRIME}
+            caption={`${INCIDENT_CRIME} reports in ${periodLabel}`}
             color={theme.palette.error.main}
           />
         </Grid>
@@ -398,26 +465,34 @@ export function OverviewAppView() {
           <SummaryMetric
             title="Estimated loss"
             value={accidentsLoading ? '—' : fNumber(insights.estimatedLoss)}
-            caption={`Across ${fNumber(insights.companyCount)} companies`}
+            caption={`${fNumber(insights.companyCount)} companies in ${periodLabel}`}
             color={theme.palette.info.main}
           />
         </Grid>
 
         <Grid xs={12} lg={8}>
           <InsightChartCard
-            title="Monthly incident trend"
-            subheader={`Monthly reports by type — last 12 months (${insights.monthLabels[0]} to ${insights.monthLabels[11]})`}
+            title={selectedMonth === ALL_MONTHS ? 'Monthly incident trend' : 'Daily incident trend'}
+            subheader={
+              selectedMonth === ALL_MONTHS
+                ? `Monthly reports by type in ${selectedYear}`
+                : `Daily reports by type in ${periodLabel}`
+            }
             type="line"
-            categories={insights.monthLabels}
+            categories={insights.periodLabels}
             series={insights.monthlySeries}
             loading={accidentsLoading}
-            ariaLabel="Line chart of monthly reports by incident type over the last 12 months"
+            ariaLabel={
+              selectedMonth === ALL_MONTHS
+                ? `Line chart of monthly reports by incident type in ${selectedYear}`
+                : `Line chart of daily reports by incident type in ${periodLabel}`
+            }
           />
         </Grid>
         <Grid xs={12} lg={4}>
           <InsightChartCard
             title="Incident type mix"
-            subheader="Share of all recorded reports"
+            subheader={`Share of reports in ${periodLabel}`}
             type="donut"
             labels={insights.typeLabels}
             series={insights.typeValues}
@@ -429,19 +504,23 @@ export function OverviewAppView() {
         <Grid xs={12}>
           <InsightChartCard
             title="Estimated loss trend"
-            subheader={`Monthly property and intellectual-property estimates — last 12 months (${insights.monthLabels[0]} to ${insights.monthLabels[11]})`}
+            subheader={
+              selectedMonth === ALL_MONTHS
+                ? `Monthly loss estimates in ${selectedYear}`
+                : `Daily loss estimates in ${periodLabel}`
+            }
             type="area"
-            categories={insights.monthLabels}
+            categories={insights.periodLabels}
             series={insights.monthlyLossSeries}
             loading={accidentsLoading}
-            ariaLabel="Area chart of estimated damage loss by incident type over the last 12 months"
+            ariaLabel={`Estimated damage loss by incident type in ${periodLabel}`}
           />
         </Grid>
 
         <Grid xs={12} lg={6}>
           <InsightListCard
             title="Reports by company"
-            subheader="Top 10 companies by report volume"
+            subheader={`Top 10 companies by report volume in ${periodLabel}`}
             items={insights.companyItems}
             loading={accidentsLoading}
           />
@@ -449,7 +528,7 @@ export function OverviewAppView() {
         <Grid xs={12} lg={6}>
           <InsightListCard
             title="Accident causes"
-            subheader="Cause values from the accident report form"
+            subheader={`Cause values in ${periodLabel}`}
             items={insights.causeItems}
             loading={accidentsLoading}
           />
@@ -458,7 +537,7 @@ export function OverviewAppView() {
         <Grid xs={12} lg={6}>
           <InsightListCard
             title="Reported injury outcomes"
-            subheader="Victim and injury categories from submitted reports"
+            subheader={`Victim and injury categories in ${periodLabel}`}
             items={insights.injuryItems}
             loading={accidentsLoading}
           />
@@ -466,7 +545,7 @@ export function OverviewAppView() {
         <Grid xs={12} lg={6}>
           <InsightListCard
             title="Estimated loss by company"
-            subheader="Property and intellectual-property damage estimates"
+            subheader={`Damage estimates in ${periodLabel}`}
             items={insights.lossCompanyItems}
             loading={accidentsLoading}
           />
@@ -475,7 +554,7 @@ export function OverviewAppView() {
         <Grid xs={12}>
           <InsightListCard
             title="Reports by day of week"
-            subheader="Based on incident date, report date, or record creation date"
+            subheader={`Based on incident date, report date, or record creation date in ${periodLabel}`}
             items={insights.weekdayItems}
             loading={accidentsLoading}
           />

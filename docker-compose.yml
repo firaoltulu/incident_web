@@ -27,8 +27,5 @@ services:
         - /server/node_modules
         - ./admin_server:/server
       environment:
-          - MONGO_URL=mongodb://midroc_app:${MONGO_PASSWORD}@192.168.1.174:27017/Midroc_Accident
-        # - MONGO_URL=mongodb://midroc_app:MIGmain@852963@192.168.1.174:27017/Midroc_Accident
-        # - MONGO_URL=mongodb://midroc_app:${MONGO_PASSWORD}@192.168.1.174:27017/Midroc_Accident?authSource=Midroc_Accident
-        # - MONGO_URL=mongodb://localhost:27018/Midroc_Accident
+        - MONGO_URL=mongodb://midroc_app:${MONGO_PASSWORD}@192.168.1.174:27017/Midroc_Accident
         # - MONGO_URL=mongodb+srv://tululemma:tululemma@clusterfir.e6vva.mongodb.net/Midroc_Accident?retryWrites=true&w=majority

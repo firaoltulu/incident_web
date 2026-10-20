@@ -21,6 +21,8 @@ import { RouterLink } from 'src/routes/components';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useSetState } from 'src/hooks/use-set-state';
 
+import axios from 'src/utils/axios';
+
 import { useGetCompanies } from 'src/actions/product';
 import { DashboardContent } from 'src/layouts/dashboard';
 
@@ -29,6 +31,8 @@ import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
+
+import { useAuthContext } from 'src/auth/hooks';
 
 import { ProductTableFiltersResult } from '../Company-table-filters-result';
 import {
@@ -43,13 +47,18 @@ import {
 const HIDE_COLUMNS = { category: false };
 
 const HIDE_COLUMNS_TOGGLABLE = ['category', 'actions'];
+const ADMINISTRATOR_ROLE_ID = '69afda7ce222d7d9af50ab1c';
 
 // ----------------------------------------------------------------------
 
 export function ProductListView() {
-  const confirmRows = useBoolean();
+  const confirmDelete = useBoolean();
 
   const router = useRouter();
+  const { user: currentUser } = useAuthContext();
+  const canDeleteCompanies = currentUser?.Roles?.some(
+    (role) => String(role?._id || role?.id || role) === ADMINISTRATOR_ROLE_ID
+  );
 
   const { companies, companiesLoading } = useGetCompanies();
 
@@ -57,7 +66,8 @@ export function ProductListView() {
 
   const [tableData, setTableData] = useState([]);
 
-  const [selectedRowIds, setSelectedRowIds] = useState([]);
+  const [companyToDelete, setCompanyToDelete] = useState(null);
+  const [isDeletingCompany, setIsDeletingCompany] = useState(false);
 
   const [parentGroups, setParentGroups] = useState([]);
 
@@ -86,24 +96,22 @@ export function ProductListView() {
 
   const dataFiltered = applyFilter({ inputData: tableData, filters: filters.state });
 
-  const handleDeleteRow = useCallback(
-    (id) => {
-      const deleteRow = tableData.filter((row) => row.id !== id);
+  const handleDeleteRow = useCallback(async () => {
+    if (!canDeleteCompanies || !companyToDelete || isDeletingCompany) return;
 
-      toast.success('Delete success!');
-
-      setTableData(deleteRow);
-    },
-    [tableData]
-  );
-
-  const handleDeleteRows = useCallback(() => {
-    const deleteRows = tableData.filter((row) => !selectedRowIds.includes(row.id));
-
-    toast.success('Delete success!');
-
-    setTableData(deleteRows);
-  }, [selectedRowIds, tableData]);
+    setIsDeletingCompany(true);
+    try {
+      await axios.delete(`/company/delete/${companyToDelete.id}`);
+      setTableData((rows) => rows.filter((row) => row.id !== companyToDelete.id));
+      toast.success('Company deleted successfully.');
+      confirmDelete.onFalse();
+      setCompanyToDelete(null);
+    } catch (error) {
+      toast.error(error?.message || 'Failed to delete company.');
+    } finally {
+      setIsDeletingCompany(false);
+    }
+  }, [canDeleteCompanies, companyToDelete, confirmDelete, isDeletingCompany]);
 
   const handleEditRow = useCallback(
     (id) => {
@@ -124,14 +132,12 @@ export function ProductListView() {
       <CustomToolbar
         filters={filters}
         canReset={canReset}
-        selectedRowIds={selectedRowIds}
         setFilterButtonEl={setFilterButtonEl}
         filteredResults={dataFiltered.length}
-        onOpenConfirmDeleteRows={confirmRows.onTrue}
       />
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filters.state, selectedRowIds]
+    [filters.state]
   );
 
   const columns = [
@@ -186,15 +192,17 @@ export function ProductListView() {
           label="Edit"
           onClick={() => handleEditRow(params.row.id)}
         />,
-        // <GridActionsCellItem
-        //   showInMenu
-        //   icon={<Iconify icon="solar:trash-bin-trash-bold" />}
-        //   label="Delete"
-        //   onClick={() => {
-        //     handleDeleteRow(params.row.id);
-        //   }}
-        //   sx={{ color: 'error.main' }}
-        // />,
+        <GridActionsCellItem
+          showInMenu
+          icon={<Iconify icon="solar:trash-bin-trash-bold" />}
+          label="Delete"
+          disabled={!canDeleteCompanies}
+          onClick={() => {
+            setCompanyToDelete(params.row);
+            confirmDelete.onTrue();
+          }}
+          sx={{ color: 'error.main' }}
+        />,
       ],
     },
   ];
@@ -243,7 +251,6 @@ export function ProductListView() {
             getRowHeight={() => 'auto'}
             pageSizeOptions={[5, 10, 25]}
             initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-            onRowSelectionModelChange={(newSelectionModel) => setSelectedRowIds(newSelectionModel)}
             columnVisibilityModel={columnVisibilityModel}
             onColumnVisibilityModelChange={(newModel) => setColumnVisibilityModel(newModel)}
             slots={{
@@ -264,24 +271,26 @@ export function ProductListView() {
       </DashboardContent>
 
       <ConfirmDialog
-        open={confirmRows.value}
-        onClose={confirmRows.onFalse}
+        open={confirmDelete.value}
+        onClose={() => {
+          confirmDelete.onFalse();
+          setCompanyToDelete(null);
+        }}
         title="Delete"
         content={
           <>
-            Are you sure want to delete <strong> {selectedRowIds.length} </strong> items?
+            Are you sure you want to delete <strong>{companyToDelete?.Name}</strong>? Companies
+            associated with users, accidents, or child companies cannot be deleted.
           </>
         }
         action={
           <Button
             variant="contained"
             color="error"
-            onClick={() => {
-              handleDeleteRows();
-              confirmRows.onFalse();
-            }}
+            onClick={handleDeleteRow}
+            disabled={isDeletingCompany}
           >
-            Delete
+            {isDeletingCompany ? 'Deleting...' : 'Delete'}
           </Button>
         }
       />
@@ -294,10 +303,8 @@ export function ProductListView() {
 function CustomToolbar({
   filters,
   canReset,
-  selectedRowIds,
   filteredResults,
   setFilterButtonEl,
-  onOpenConfirmDeleteRows,
 }) {
 
   return (
@@ -313,17 +320,6 @@ function CustomToolbar({
           alignItems="center"
           justifyContent="flex-end"
         >
-          {!!selectedRowIds.length && (
-            <Button
-              size="small"
-              color="error"
-              startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}
-              onClick={onOpenConfirmDeleteRows}
-            >
-              Delete ({selectedRowIds.length})
-            </Button>
-          )}
-
           <GridToolbarColumnsButton />
           <GridToolbarFilterButton ref={setFilterButtonEl} />
           <GridToolbarExport />

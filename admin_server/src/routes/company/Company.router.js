@@ -6,7 +6,8 @@ const {
     httpListCompany,
     httpListGroupCompany,
     httpGetCompany,
-    httpEditCompany
+    httpEditCompany,
+    httpDeleteCompany
 } = require("./Company.controller");
 
 const { authenticate } = require("../../lib/verifytoken");
@@ -22,5 +23,6 @@ CompanyRouter.get("/list", httpListCompany);
 CompanyRouter.get("/details/:companyId", httpGetCompany);
 CompanyRouter.get("/listgroup", httpListGroupCompany);
 CompanyRouter.put("/edit/:companyId", httpEditCompany);
+CompanyRouter.delete("/delete/:companyId", httpDeleteCompany);
 
 module.exports = CompanyRouter;

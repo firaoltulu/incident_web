@@ -14,6 +14,8 @@ const {
 
 const { getPagination } = require("../../services/query");
 
+const ADMINISTRATOR_ROLE_ID = "69afda7ce222d7d9af50ab1c";
+
 
 async function httpAddNewCompany(req, res) {
 
@@ -235,12 +237,54 @@ async function httpEditCompany(req, res) {
     }
 };
 
+async function httpDeleteCompany(req, res) {
+    try {
+        const userRoles = Array.isArray(req.user?.Roles) ? req.user.Roles : [];
+        const isAdmin = userRoles.some(
+            (role) => String(role?._id || role?.id || role) === ADMINISTRATOR_ROLE_ID
+        );
+
+        if (!isAdmin) {
+            return res.status(403).json({
+                message: "Only administrators can delete companies",
+                reason: 6,
+            });
+        }
+
+        const { companyId } = req.params;
+
+        if (!companyId) {
+            return res.status(400).json({ message: "Company ID is required", reason: 1 });
+        }
+
+        const result = await AbortCompanyById(companyId);
+
+        if (result.done) {
+            return res.status(200).json({ message: "Company successfully deleted", reason: 1 });
+        }
+
+        if (result.notFound) {
+            return res.status(404).json({ message: "Company does not exist", reason: 2 });
+        }
+
+        return res.status(409).json({
+            message: `Cannot delete this company because it is associated with ${result.associatedWith.join(", ")}`,
+            reason: 3,
+        });
+    } catch (error) {
+        console.error("Failed to delete company:", error);
+        if (error.name === "CastError") {
+            return res.status(400).json({ message: "Invalid company ID", reason: 4 });
+        }
+        return res.status(500).json({ message: "Failed to delete company", reason: 5 });
+    }
+};
+
 module.exports = {
     httpAddNewCompany,
     httpListCompany,
     httpListGroupCompany,
     httpGetCompany,
-    httpEditCompany
+    httpEditCompany,
+    httpDeleteCompany
 };
-
-

@@ -2,6 +2,8 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const Companydatabase = require("./Company.mongo");
+const Userdatabase = require("../user/User.mongo");
+const Accidentdatabase = require("../accident/Accident.mongo");
 const uuid = require('uuid');
 
 async function findCompany(filter) {
@@ -182,18 +184,32 @@ async function EditCompanyById(CompanyID = "", body = null) {
 
 async function AbortCompanyById(CompanyID) {
 
-    const aborted = await Companydatabase.deleteOne(
-        {
-            CompanyID: CompanyID,
-        }
-    );
-    if (aborted.deletedCount === 1) {
+    const company = await Companydatabase.findById(CompanyID);
 
-        return { done: true };
+    if (!company) {
+        return { done: false, notFound: true };
     }
-    else {
-        return { done: false };
+
+    const [users, accidents, childCompanies] = await Promise.all([
+        Userdatabase.exists({ Company: company._id }),
+        Accidentdatabase.exists({ company: company._id }),
+        Companydatabase.exists({ ParentGroup: company.CompanyID }),
+    ]);
+
+    const associatedWith = [];
+    if (users) associatedWith.push("users");
+    if (accidents) associatedWith.push("accidents");
+    if (childCompanies) associatedWith.push("child companies");
+
+    if (associatedWith.length) {
+        return { done: false, associatedWith };
     }
+
+    const deleted = await Companydatabase.deleteOne({ _id: company._id });
+
+    return deleted.deletedCount === 1
+        ? { done: true }
+        : { done: false, notFound: true };
 
 };
 

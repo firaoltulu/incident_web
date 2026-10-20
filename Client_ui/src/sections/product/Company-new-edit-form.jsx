@@ -28,7 +28,9 @@ export const NewProductSchema = zod.object({
   parentGroup: zod.string(),
   // .string().array().nonempty({ message: 'Choose at least one option!' }),
   // Not required
-  isGroup: zod.object({ enabled: zod.boolean() }),
+  isGroup: zod
+    .object({ enabled: zod.boolean().default(false) })
+    .default({ enabled: false }),
 }).superRefine((data, ctx) => {
   if (!data.isGroup.enabled && !data.parentGroup) {
     ctx.addIssue({
@@ -52,7 +54,7 @@ export function ProductNewEditForm({ currentProduct }) {
       name: currentProduct?.Name || '',
       description: currentProduct?.Description || '',
       parentGroup: currentProduct?.ParentGroup || '',
-      isGroup: { enabled: currentProduct?.IsGroup } || { enabled: false },
+      isGroup: { enabled: currentProduct?.IsGroup ?? false },
     }),
     [currentProduct]
   );

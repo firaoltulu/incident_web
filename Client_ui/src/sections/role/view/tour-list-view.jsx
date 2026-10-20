@@ -21,6 +21,9 @@ import { RouterLink } from 'src/routes/components';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useSetState } from 'src/hooks/use-set-state';
 
+import axios from 'src/utils/axios';
+
+import { CONFIG } from 'src/config-global';
 import { useGetRoles } from 'src/actions/role';
 import { DashboardContent } from 'src/layouts/dashboard';
 
@@ -29,6 +32,8 @@ import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
+
+import { useAuthContext } from 'src/auth/hooks';
 
 import { ProductTableFiltersResult } from '../role-table-filters-result';
 import {
@@ -43,14 +48,16 @@ import {
 const HIDE_COLUMNS = { category: false };
 
 const HIDE_COLUMNS_TOGGLABLE = ['category', 'actions'];
-const ADMINISTRATOR_ROLE_ID = '69afda7ce222d7d9af50ab1c';
-
 // ----------------------------------------------------------------------
 
 export function TourListView() {
-  const confirmRows = useBoolean();
+  const confirmDelete = useBoolean();
 
   const router = useRouter();
+  const { user: currentUser } = useAuthContext();
+  const canDeleteRoles = currentUser?.Roles?.some(
+    (role) => String(role?._id || role?.id || role) === CONFIG.role.adminRole
+  );
 
   const { roles, rolesLoading } = useGetRoles();
 
@@ -58,7 +65,8 @@ export function TourListView() {
 
   const [tableData, setTableData] = useState([]);
 
-  const [selectedRowIds, setSelectedRowIds] = useState([]);
+  const [roleToDelete, setRoleToDelete] = useState(null);
+  const [isDeletingRole, setIsDeletingRole] = useState(false);
 
   const [filterButtonEl, setFilterButtonEl] = useState(null);
 
@@ -75,24 +83,22 @@ export function TourListView() {
 
   const dataFiltered = applyFilter({ inputData: tableData, filters: filters.state });
 
-  const handleDeleteRow = useCallback(
-    (id) => {
-      const deleteRow = tableData.filter((row) => row.id !== id);
+  const handleDeleteRow = useCallback(async () => {
+    if (!canDeleteRoles || !roleToDelete || isDeletingRole) return;
 
-      toast.success('Delete success!');
-
-      setTableData(deleteRow);
-    },
-    [tableData]
-  );
-
-  const handleDeleteRows = useCallback(() => {
-    const deleteRows = tableData.filter((row) => !selectedRowIds.includes(row.id));
-
-    toast.success('Delete success!');
-
-    setTableData(deleteRows);
-  }, [selectedRowIds, tableData]);
+    setIsDeletingRole(true);
+    try {
+      await axios.delete(`/role/delete/${roleToDelete.id}`);
+      setTableData((rows) => rows.filter((row) => row.id !== roleToDelete.id));
+      toast.success('Role deleted successfully.');
+      confirmDelete.onFalse();
+      setRoleToDelete(null);
+    } catch (error) {
+      toast.error(error?.message || 'Failed to delete role.');
+    } finally {
+      setIsDeletingRole(false);
+    }
+  }, [canDeleteRoles, confirmDelete, isDeletingRole, roleToDelete]);
 
   const handleEditRow = useCallback(
     (id) => {
@@ -113,14 +119,12 @@ export function TourListView() {
       <CustomToolbar
         filters={filters}
         canReset={canReset}
-        selectedRowIds={selectedRowIds}
         setFilterButtonEl={setFilterButtonEl}
         filteredResults={dataFiltered.length}
-        onOpenConfirmDeleteRows={confirmRows.onTrue}
       />
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filters.state, selectedRowIds]
+    [filters.state]
   );
 
   const columns = [
@@ -170,18 +174,20 @@ export function TourListView() {
           showInMenu
           icon={<Iconify icon="solar:pen-bold" />}
           label="Edit"
-          disabled={String(params.row.id) === ADMINISTRATOR_ROLE_ID}
+          disabled={String(params.row.id) === CONFIG.role.adminRole}
           onClick={() => handleEditRow(params.row.id)}
         />,
-        // <GridActionsCellItem
-        //   showInMenu
-        //   icon={<Iconify icon="solar:trash-bin-trash-bold" />}
-        //   label="Delete"
-        //   onClick={() => {
-        //     handleDeleteRow(params.row.id);
-        //   }}
-        //   sx={{ color: 'error.main' }}
-        // />,
+        <GridActionsCellItem
+          showInMenu
+          icon={<Iconify icon="solar:trash-bin-trash-bold" />}
+          label="Delete"
+          disabled={!canDeleteRoles}
+          onClick={() => {
+            setRoleToDelete(params.row);
+            confirmDelete.onTrue();
+          }}
+          sx={{ color: 'error.main' }}
+        />,
       ],
     },
   ];
@@ -230,7 +236,6 @@ export function TourListView() {
             getRowHeight={() => 'auto'}
             pageSizeOptions={[5, 10, 25]}
             initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-            onRowSelectionModelChange={(newSelectionModel) => setSelectedRowIds(newSelectionModel)}
             columnVisibilityModel={columnVisibilityModel}
             onColumnVisibilityModelChange={(newModel) => setColumnVisibilityModel(newModel)}
             slots={{
@@ -251,24 +256,26 @@ export function TourListView() {
       </DashboardContent>
 
       <ConfirmDialog
-        open={confirmRows.value}
-        onClose={confirmRows.onFalse}
+        open={confirmDelete.value}
+        onClose={() => {
+          confirmDelete.onFalse();
+          setRoleToDelete(null);
+        }}
         title="Delete"
         content={
           <>
-            Are you sure want to delete <strong> {selectedRowIds.length} </strong> items?
+            Are you sure you want to delete <strong>{roleToDelete?.Name}</strong>? Roles associated
+            with users or workflows cannot be deleted.
           </>
         }
         action={
           <Button
             variant="contained"
             color="error"
-            onClick={() => {
-              handleDeleteRows();
-              confirmRows.onFalse();
-            }}
+            onClick={handleDeleteRow}
+            disabled={isDeletingRole}
           >
-            Delete
+            {isDeletingRole ? 'Deleting...' : 'Delete'}
           </Button>
         }
       />
@@ -281,10 +288,8 @@ export function TourListView() {
 function CustomToolbar({
   filters,
   canReset,
-  selectedRowIds,
   filteredResults,
   setFilterButtonEl,
-  onOpenConfirmDeleteRows,
 }) {
   return (
     <>
@@ -304,17 +309,6 @@ function CustomToolbar({
           alignItems="center"
           justifyContent="flex-end"
         >
-          {!!selectedRowIds.length && (
-            <Button
-              size="small"
-              color="error"
-              startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}
-              onClick={onOpenConfirmDeleteRows}
-            >
-              Delete ({selectedRowIds.length})
-            </Button>
-          )}
-
           <GridToolbarColumnsButton />
           <GridToolbarFilterButton ref={setFilterButtonEl} />
           <GridToolbarExport />

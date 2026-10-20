@@ -52,7 +52,7 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
 
         <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.PhoneNumber}</TableCell>
 
-        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row.Company.Name}</TableCell>
+        <TableCell sx={{ whiteSpace: 'nowrap' }}>{row?.Company?.Name}</TableCell>
 
         <TableCell sx={{ whiteSpace: 'nowrap' }}>
           {row.Roles.map((role, index) => (

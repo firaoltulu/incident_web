@@ -25,6 +25,7 @@ import { useSetState } from 'src/hooks/use-set-state';
 import axios from 'src/utils/axios';
 import { fIsAfter, fIsBetween } from 'src/utils/format-time';
 
+import { CONFIG } from 'src/config-global';
 import { varAlpha } from 'src/theme/styles';
 import { useGetAccident } from 'src/actions/accident';
 import { DashboardContent } from 'src/layouts/dashboard';
@@ -70,8 +71,6 @@ const TABLE_HEAD = [
   { id: '', width: 88 },
 ];
 
-const ADMINISTRATOR_ROLE_ID = '69afda7ce222d7d9af50ab1c';
-
 // const TABLE_HEAD = [
 //   { id: 'AccidentID', label: 'Id', width: 88 },
 //   { id: 'company.name', label: 'company', width: 140 },
@@ -89,12 +88,15 @@ const ADMINISTRATOR_ROLE_ID = '69afda7ce222d7d9af50ab1c';
 // ------------------------------l----------------------------------------
 
 export function AccidentListView() {
+
+  const ACCIDENT_MODULE_ID = CONFIG.module.accidentModule;
+
   const table = useTable();
 
   const router = useRouter();
   const { user: currentUser } = useAuthContext();
   const canDeleteAccidents = currentUser?.Roles?.some(
-    (role) => String(role?._id || role?.id || role) === ADMINISTRATOR_ROLE_ID
+    (role) => String(role?._id || role?.id || role) === CONFIG.role.adminRole
   );
 
   const { accidents, accidentsLoading } = useGetAccident({
@@ -103,6 +105,8 @@ export function AccidentListView() {
   });
   const { workflows } = useWorkflowContext();
   const [docWorkFlow, setDocWorkFlow] = useState(null);
+
+
 
   const [statusOptions, setStatusOptions] = useState([{ value: 'all', label: 'All' }]);
 
@@ -117,9 +121,9 @@ export function AccidentListView() {
   }, [accidents, accidentsLoading]);
 
   useEffect(() => {
-    const found = workflows.find((row) => row.Module._id);
+    const found = workflows.find((row) => row.Module._id === ACCIDENT_MODULE_ID);
     setDocWorkFlow(found);
-  }, [workflows]);
+  }, [workflows, ACCIDENT_MODULE_ID]);
 
   useEffect(() => {
     try {

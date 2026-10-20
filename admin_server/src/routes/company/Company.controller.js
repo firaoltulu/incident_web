@@ -14,8 +14,6 @@ const {
 
 const { getPagination } = require("../../services/query");
 
-const ADMINISTRATOR_ROLE_ID = "69afda7ce222d7d9af50ab1c";
-
 
 async function httpAddNewCompany(req, res) {
 
@@ -241,7 +239,7 @@ async function httpDeleteCompany(req, res) {
     try {
         const userRoles = Array.isArray(req.user?.Roles) ? req.user.Roles : [];
         const isAdmin = userRoles.some(
-            (role) => String(role?._id || role?.id || role) === ADMINISTRATOR_ROLE_ID
+            (role) => String(role?._id || role?.id || role) === process.env.USER_ROLE_ADMIN
         );
 
         if (!isAdmin) {

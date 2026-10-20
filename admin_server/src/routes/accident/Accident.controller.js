@@ -30,7 +30,6 @@ const { getAllButtons } = require("../../models/button/Button.model");
 
 const ACCIDENT_MODULE_ID = process.env.ACCIDENT_MODULE_ID;
 const USER_ROLE_ADMIN = process.env.USER_ROLE_ADMIN;
-const ADMINISTRATOR_ROLE_ID = "69afda7ce222d7d9af50ab1c";
 
 
 async function httpAddNewAccident(req, res) {
@@ -294,7 +293,7 @@ async function httpDeleteAccident(req, res) {
         const user = req.body?.user;
         const userRoles = Array.isArray(user?.Roles) ? user.Roles : [];
         const isAdmin = userRoles.some(
-            (role) => String(role?._id || role?.id || role) === ADMINISTRATOR_ROLE_ID
+            (role) => String(role?._id || role?.id || role) === USER_ROLE_ADMIN
         );
 
         if (!isAdmin) {

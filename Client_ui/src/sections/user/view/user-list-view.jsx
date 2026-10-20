@@ -100,6 +100,8 @@ export function UserListView() {
   }, [users, usersLoading]);
 
   console.log({ roleOptions });
+  console.log({ users });
+
   console.log("ddddddddddddddddddddddddddd");
 
   useEffect(() => {

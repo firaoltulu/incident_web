@@ -64,7 +64,7 @@ export function AccountGeneral({ user }) {
       lastName: user?.LastName || '',
       email: user?.Email || '',
       phoneNumber: user?.PhoneNumber || '',
-      company: user?.Company._id || '',
+      company: user?.Company?._id || '',
       roles: (user?.Roles || []).map((r) =>
         typeof r === 'string' ? { value: r, label: r } : 'value' in r ? r : { value: r._id || '', label: r.Name || '' }
       ),

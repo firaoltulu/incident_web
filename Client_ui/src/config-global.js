@@ -19,7 +19,9 @@ export const CONFIG = {
     companyModule: import.meta.env.VITE_ACCIDENT_COMPANY_KEY ?? '',
     roleModule: import.meta.env.VITE_ACCIDENT_ROLE_KEY ?? '',
     workflowModule: import.meta.env.VITE_ACCIDENT_WORKFLOW_KEY ?? '',
-
+  },
+  role: {
+    adminRole: import.meta.env.VITE_ACCIDENT_USER_ROLE_ADMIN ?? '',
   },
   /**
    * Auth

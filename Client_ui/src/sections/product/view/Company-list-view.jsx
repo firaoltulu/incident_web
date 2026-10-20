@@ -23,6 +23,7 @@ import { useSetState } from 'src/hooks/use-set-state';
 
 import axios from 'src/utils/axios';
 
+import { CONFIG } from 'src/config-global';
 import { useGetCompanies } from 'src/actions/product';
 import { DashboardContent } from 'src/layouts/dashboard';
 
@@ -47,8 +48,6 @@ import {
 const HIDE_COLUMNS = { category: false };
 
 const HIDE_COLUMNS_TOGGLABLE = ['category', 'actions'];
-const ADMINISTRATOR_ROLE_ID = '69afda7ce222d7d9af50ab1c';
-
 // ----------------------------------------------------------------------
 
 export function ProductListView() {
@@ -57,7 +56,7 @@ export function ProductListView() {
   const router = useRouter();
   const { user: currentUser } = useAuthContext();
   const canDeleteCompanies = currentUser?.Roles?.some(
-    (role) => String(role?._id || role?.id || role) === ADMINISTRATOR_ROLE_ID
+    (role) => String(role?._id || role?.id || role) === CONFIG.role.adminRole
   );
 
   const { companies, companiesLoading } = useGetCompanies();

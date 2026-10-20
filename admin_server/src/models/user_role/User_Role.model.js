@@ -2,6 +2,8 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const User_Roledatabase = require("./User_Role.mongo");
+const Userdatabase = require("../user/User.mongo");
+const WorkFlowdatabase = require("../workflow/WorkFlow.mongo");
 const uuid = require('uuid');
 
 async function findRole(filter) {
@@ -182,18 +184,31 @@ async function EditRoleById(RoleID = "", body = null) {
 
 async function AbortRoleById(RoleID) {
 
-    const aborted = await User_Roledatabase.deleteOne(
-        {
-            RoleID: RoleID,
-        }
-    );
-    if (aborted.deletedCount === 1) {
+    const role = await User_Roledatabase.findById(RoleID);
 
-        return { done: true };
+    if (!role) {
+        return { done: false, notFound: true };
     }
-    else {
-        return { done: false };
+
+    const [users, workflowStates, workflowTransitions] = await Promise.all([
+        Userdatabase.exists({ Roles: role._id }),
+        WorkFlowdatabase.exists({ "States.only_allow_edit_for": role._id }),
+        WorkFlowdatabase.exists({ "Transition_Rules.allowed": role._id }),
+    ]);
+
+    const associatedWith = [];
+    if (users) associatedWith.push("users");
+    if (workflowStates || workflowTransitions) associatedWith.push("workflows");
+
+    if (associatedWith.length) {
+        return { done: false, associatedWith };
     }
+
+    const deleted = await User_Roledatabase.deleteOne({ _id: role._id });
+
+    return deleted.deletedCount === 1
+        ? { done: true }
+        : { done: false, notFound: true };
 
 };
 

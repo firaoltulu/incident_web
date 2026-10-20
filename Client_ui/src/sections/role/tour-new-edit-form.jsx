@@ -16,7 +16,7 @@ import { useRouter } from 'src/routes/hooks';
 
 import axios from 'src/utils/axios';
 
-// import { CONFIG } from 'src/config-global';
+import { CONFIG } from 'src/config-global';
 
 import { toast } from 'src/components/snackbar';
 import { Form, Field } from 'src/components/hook-form';
@@ -37,13 +37,10 @@ export const NewRoleSchema = zod
       .refine((v) => v === undefined || Array.isArray(v), { message: 'Modules is required!' }),
   });
 
-const ADMINISTRATOR_ROLE_ID = '69afda7ce222d7d9af50ab1c';
-
 export function TourNewEditForm({ currentRole }) {
   const router = useRouter();
-  // const URL = CONFIG.site.serverUrl;
   const isProtectedRole =
-    String(currentRole?.id || currentRole?._id || '') === ADMINISTRATOR_ROLE_ID;
+    String(currentRole?.id || currentRole?._id || '') === CONFIG.role.adminRole;
 
   const [groupModules, setGroupModules] = useState([]);
   const [reload, setReload] = useState(false);

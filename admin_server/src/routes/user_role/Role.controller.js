@@ -19,7 +19,7 @@ const { getPagination } = require("../../services/query");
 
 const { NewRoleSchema } = require("../../schema/RoleSchema");
 
-const ADMINISTRATOR_ROLE_ID = "69afda7ce222d7d9af50ab1c";
+const ADMINISTRATOR_ROLE_ID = process.env.USER_ROLE_ADMIN;
 
 function extractModuleValues(modules) {
     return modules.map(module => module.value);
@@ -154,6 +154,49 @@ async function httpEditRole(req, res) {
     }
 };
 
+async function httpDeleteRole(req, res) {
+    try {
+        const userRoles = Array.isArray(req.user?.Roles) ? req.user.Roles : [];
+        const isAdmin = userRoles.some(
+            (role) => String(role?._id || role?.id || role) === ADMINISTRATOR_ROLE_ID
+        );
+
+        if (!isAdmin) {
+            return res.status(403).json({
+                message: "Only administrators can delete roles",
+                reason: 6,
+            });
+        }
+
+        const { roleId } = req.params;
+
+        if (!roleId) {
+            return res.status(400).json({ message: "Role ID is required", reason: 1 });
+        }
+
+        const result = await AbortRoleById(roleId);
+
+        if (result.done) {
+            return res.status(200).json({ message: "Role successfully deleted", reason: 1 });
+        }
+
+        if (result.notFound) {
+            return res.status(404).json({ message: "Role does not exist", reason: 2 });
+        }
+
+        return res.status(409).json({
+            message: `Cannot delete this role because it is associated with ${result.associatedWith.join(", ")}`,
+            reason: 3,
+        });
+    } catch (error) {
+        console.error("Failed to delete role:", error);
+        if (error.name === "CastError") {
+            return res.status(400).json({ message: "Invalid role ID", reason: 4 });
+        }
+        return res.status(500).json({ message: "Failed to delete role", reason: 5 });
+    }
+};
+
 // async function httpListGroupCompany(req, res) {
 
 //     try {
@@ -194,9 +237,9 @@ module.exports = {
     httpAddNewRole,
     httpListRoles,
     httpGetRole,
-    httpEditRole
+    httpEditRole,
+    httpDeleteRole
     // httpListGroupCompany,
     // httpGetCompany,
     // httpEditCompany
 };
-

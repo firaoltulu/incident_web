@@ -5,7 +5,8 @@ const {
     httpAddNewRole,
     httpListRoles,
     httpGetRole,
-    httpEditRole
+    httpEditRole,
+    httpDeleteRole
     // httpListGroupCompany,
     // httpGetCompany,
     // httpEditCompany
@@ -24,5 +25,6 @@ RoleRouter.get("/list", httpListRoles);
 RoleRouter.get("/details/:roleId", httpGetRole);
 // RoleRouter.get("/listgroup", httpListGroupCompany);
 RoleRouter.put("/edit/:roleId", httpEditRole);
+RoleRouter.delete("/delete/:roleId", httpDeleteRole);
 
 module.exports = RoleRouter;

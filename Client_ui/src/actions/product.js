@@ -16,7 +16,10 @@ const swrOptions = {
 export function useGetCompanies() {
   const url = endpoints.company.list;
 
-  const { data, isLoading, error, isValidating } = useSWR(url, fetcher, swrOptions);
+  const { data, isLoading, error, isValidating } = useSWR(url, fetcher, {
+    ...swrOptions,
+    revalidateOnMount: true,
+  });
 
   const memoizedValue = useMemo(
     () => ({

@@ -21,9 +21,30 @@ async function httpAddNewCompany(req, res) {
 
         const body = req.body;
 
+
         if (body.name != "" && body.description != "") {
 
-            const exists_Company = await existsCompanyWithId(body.parentGroup);
+            if (body.isGroup.enabled === true && body.parentGroup === "") {
+                const newCompany = Object.assign({}, {
+                    Name: body.name,
+                    Description: body.description,
+                    IsActive: true,
+                    IsGroup: body.isGroup.enabled,
+                    ParentGroup: body.parentGroup,
+                    IsBanned: false,
+                });
+
+                const companyExists = await AddNewCompany(newCompany);
+
+                if (companyExists.done === true) {
+                    return res.status(200).json({ message: "Company successfully added", reason: 1 });
+                }
+                else {
+                    return res.status(400).json({ message: "Required fields not specfied", reason: 2 });
+                }
+            }
+
+            const exists_Company = await existsCompanyWithCompanyId(body.parentGroup);
 
             if (exists_Company && exists_Company.IsGroup === true) {
 

@@ -25,10 +25,18 @@ import { Form, Field, schemaHelper } from 'src/components/hook-form';
 export const NewProductSchema = zod.object({
   name: zod.string().min(1, { message: 'Name is required!' }),
   description: schemaHelper.editor({ message: { required_error: 'Description is required!' } }),
-  parentGroup: zod.string().min(1, { message: "Parent group is required!" }),
+  parentGroup: zod.string(),
   // .string().array().nonempty({ message: 'Choose at least one option!' }),
   // Not required
   isGroup: zod.object({ enabled: zod.boolean() }),
+}).superRefine((data, ctx) => {
+  if (!data.isGroup.enabled && !data.parentGroup) {
+    ctx.addIssue({
+      code: zod.ZodIssueCode.custom,
+      message: 'Parent group is required!',
+      path: ['parentGroup'],
+    });
+  }
 });
 
 // ----------------------------------------------------------------------
@@ -101,6 +109,8 @@ export function ProductNewEditForm({ currentProduct }) {
 
 
   const onSubmit = handleSubmit(async (data) => {
+    console.log({ data });
+    console.log("££££££££££££££££££££££££££££");
     try {
       if (!currentProduct) {
         const response = await axios.post(`/company/register`, data);
@@ -130,7 +140,11 @@ export function ProductNewEditForm({ currentProduct }) {
       <Stack spacing={3} sx={{ p: 3 }}>
         <Field.Text name="name" label="Company name" />
 
-        <Field.Select name="parentGroup" label="Parent Company Group">
+        <Field.Select
+          name="parentGroup"
+          label="Parent Company Group"
+          required={!values.isGroup.enabled}
+        >
           {groupOptions.map((status) => (
             <MenuItem key={status.value} value={status.value}>
               {status.label}

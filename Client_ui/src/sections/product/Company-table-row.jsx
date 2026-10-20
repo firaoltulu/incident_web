@@ -14,7 +14,7 @@ import { Label } from 'src/components/label';
 export function RenderCellPublish({ params }) {
   return (
     <Label variant="soft" color={(params.row.IsGroup === true && 'success') || 'default'}>
-      {params.row.IsGroup ? 'Group' : 'Service'}
+      {params.row.IsGroup ? 'Group' : 'Individual'}
     </Label>
   );
 }

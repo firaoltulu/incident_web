@@ -31,6 +31,8 @@ const MONTHS = Array.from({ length: 12 }, (_, month) =>
   new Intl.DateTimeFormat('en', { month: 'long' }).format(new Date(2020, month, 1))
 );
 const ALL_MONTHS = 'all';
+const ALL_STATES = 'all';
+const NO_STATE = '__no_state__';
 
 function getAccidentDate(accident) {
   const dateValues = [
@@ -65,6 +67,17 @@ function getCompanyName(accident) {
   );
 }
 
+function getStateName(state) {
+  return state?.Name || state?.name || 'No state assigned';
+}
+
+function getStateId(state) {
+  const stateId = state?._id || state?.id;
+  if (stateId) return String(stateId);
+  if (typeof state === 'string' || typeof state === 'number') return String(state);
+  return NO_STATE;
+}
+
 function toAmount(value) {
   const amount = Number(String(value ?? '').replace(/,/g, '').trim());
   return Number.isFinite(amount) && amount > 0 ? amount : 0;
@@ -95,7 +108,16 @@ function countBy(items, getLabel) {
   return [...counts.entries()].sort((a, b) => b[1] - a[1]);
 }
 
-function SummaryMetric({ title, value, caption, color }) {
+function SummaryMetric({
+  title,
+  value,
+  caption,
+  color,
+  stateOptions,
+  selectedState,
+  onStateChange,
+  stateFilterId,
+}) {
   return (
     <Card
       sx={{
@@ -114,6 +136,23 @@ function SummaryMetric({ title, value, caption, color }) {
       <Typography variant="body2" color="text.secondary">
         {caption}
       </Typography>
+      <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+        <InputLabel id={`${stateFilterId}-label`}>Filter by state</InputLabel>
+        <Select
+          labelId={`${stateFilterId}-label`}
+          id={stateFilterId}
+          value={selectedState}
+          label="Filter by state"
+          onChange={(event) => onStateChange(event.target.value)}
+        >
+          <MenuItem value={ALL_STATES}>All states</MenuItem>
+          {stateOptions.map((state) => (
+            <MenuItem key={state.id} value={state.id}>
+              {state.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
     </Card>
   );
 }
@@ -180,6 +219,10 @@ function InsightChartCard({
   loading = false,
   height = 340,
   ariaLabel,
+  stateOptions,
+  selectedState,
+  onStateChange,
+  stateFilterId,
 }) {
   const theme = useTheme();
   const chartColors = [
@@ -240,6 +283,27 @@ function InsightChartCard({
   return (
     <Card sx={{ height: '100%' }}>
       <CardHeader title={title} subheader={subheader} sx={{ pb: 0 }} />
+      {stateOptions && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 2, pt: 2 }}>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel id={`${stateFilterId}-label`}>Filter by state</InputLabel>
+            <Select
+              labelId={`${stateFilterId}-label`}
+              id={stateFilterId}
+              value={selectedState}
+              label="Filter by state"
+              onChange={(event) => onStateChange(event.target.value)}
+            >
+              <MenuItem value={ALL_STATES}>All states</MenuItem>
+              {stateOptions.map((state) => (
+                <MenuItem key={state.id} value={state.id}>
+                  {state.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
       {loading ? (
         <Box
           role="status"
@@ -275,6 +339,26 @@ export function OverviewAppView() {
   const { accidents = [], accidentsLoading } = useGetAccident();
   const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(ALL_MONTHS);
+  const [selectedState, setSelectedState] = useState(ALL_STATES);
+
+  const stateOptions = useMemo(() => {
+    const states = new Map();
+
+    accidents.forEach((accident) => {
+      const stateId = getStateId(accident.state);
+      if (!states.has(stateId)) {
+        states.set(stateId, getStateName(accident.state));
+      }
+    });
+
+    return [...states.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((first, second) => first.name.localeCompare(second.name));
+  }, [accidents]);
+  const selectedStateLabel =
+    selectedState === ALL_STATES
+      ? 'All states'
+      : stateOptions.find((state) => state.id === selectedState)?.name || 'Selected state';
 
   const availableYears = useMemo(() => {
     const years = new Set([new Date().getFullYear()]);
@@ -314,32 +398,53 @@ export function OverviewAppView() {
       const date = getAccidentDate(accident);
       return date && date.getFullYear() === year && (month === null || date.getMonth() === month);
     });
+    const chartAccidents =
+      selectedState === ALL_STATES
+        ? periodAccidents
+        : periodAccidents.filter((accident) => getStateId(accident.state) === selectedState);
+    const periodStateChanges = accidents.flatMap((accident) =>
+      (Array.isArray(accident.stateHistory) ? accident.stateHistory : []).filter((entry) => {
+        const date = entry.date ? new Date(entry.date) : null;
+        return (
+          date &&
+          !Number.isNaN(date.getTime()) &&
+          date.getFullYear() === year &&
+          (month === null || date.getMonth() === month)
+        );
+      })
+    );
     const companyCounts = new Map();
     const companyLosses = new Map();
     const weekdayCounts = Array(7).fill(0);
-    let estimatedLoss = 0;
 
     periodAccidents.forEach((accident) => {
-      const type = getIncidentType(accident);
       const company = getCompanyName(accident);
       const loss = getEstimatedLoss(accident);
       const date = getAccidentDate(accident);
 
       companyCounts.set(company, (companyCounts.get(company) || 0) + 1);
       companyLosses.set(company, (companyLosses.get(company) || 0) + loss);
-      estimatedLoss += loss;
-      const periodIndex = month === null ? date.getMonth() : date.getDate() - 1;
-      monthlyByType[type][periodIndex] += 1;
-      monthlyLossByType[type][periodIndex] += loss;
       weekdayCounts[date.getDay()] += 1;
     });
 
-    const typeCounts = countBy(periodAccidents, getIncidentType);
-    const accidentRecords = periodAccidents.filter(
+    chartAccidents.forEach((accident) => {
+      const date = getAccidentDate(accident);
+      const type = getIncidentType(accident);
+      const periodIndex = month === null ? date.getMonth() : date.getDate() - 1;
+      monthlyByType[type][periodIndex] += 1;
+      monthlyLossByType[type][periodIndex] += getEstimatedLoss(accident);
+    });
+
+    const typeCounts = countBy(chartAccidents, getIncidentType);
+    const accidentRecords = chartAccidents.filter(
       (accident) => getIncidentType(accident) === INCIDENT_ACCIDENT
     );
-    const crimeRecords = periodAccidents.filter(
+    const crimeRecords = chartAccidents.filter(
       (accident) => getIncidentType(accident) === INCIDENT_CRIME
+    );
+    const estimatedLoss = chartAccidents.reduce(
+      (total, accident) => total + getEstimatedLoss(accident),
+      0
     );
     const causeCounts = countBy(
       accidentRecords,
@@ -359,10 +464,10 @@ export function OverviewAppView() {
     const weekdayEntries = WEEKDAYS.map((day, index) => [day, weekdayCounts[index]]);
 
     return {
-      total: periodAccidents.length,
+      total: chartAccidents.length,
       accidentCount: accidentRecords.length,
       crimeCount: crimeRecords.length,
-      companyCount: companyCounts.size,
+      companyCount: new Set(chartAccidents.map(getCompanyName)).size,
       estimatedLoss,
       typeLabels: typeCounts.map(([label]) => label),
       typeValues: typeCounts.map(([, value]) => value),
@@ -378,8 +483,14 @@ export function OverviewAppView() {
       causeItems: causeCounts.map(([label, value]) => ({ label, value })),
       injuryItems: injuryCounts.map(([label, value]) => ({ label, value })),
       weekdayItems: weekdayEntries.map(([label, value]) => ({ label, value })),
+      currentStateItems: countBy(periodAccidents, (accident) =>
+        getStateName(accident.state)
+      ).map(([label, value]) => ({ label, value })),
+      stateChangeItems: countBy(periodStateChanges, (entry) =>
+        getStateName(entry.state)
+      ).map(([label, value]) => ({ label, value })),
     };
-  }, [accidents, selectedMonth, selectedYear]);
+  }, [accidents, selectedMonth, selectedState, selectedYear]);
 
   return (
     <DashboardContent maxWidth="xl">
@@ -441,32 +552,48 @@ export function OverviewAppView() {
           <SummaryMetric
             title="Total reports"
             value={accidentsLoading ? '—' : fNumber(insights.total)}
-            caption={`Reports in ${periodLabel}`}
+            caption={`Reports in ${periodLabel} · ${selectedStateLabel}`}
             color={theme.palette.primary.main}
+            stateOptions={stateOptions}
+            selectedState={selectedState}
+            onStateChange={setSelectedState}
+            stateFilterId="total-reports-state-filter"
           />
         </Grid>
         <Grid xs={12} sm={6} lg={3}>
           <SummaryMetric
             title="Accident reports"
             value={accidentsLoading ? '—' : fNumber(insights.accidentCount)}
-            caption={`${INCIDENT_ACCIDENT} reports in ${periodLabel}`}
+            caption={`${INCIDENT_ACCIDENT} reports in ${periodLabel} · ${selectedStateLabel}`}
             color={theme.palette.warning.main}
+            stateOptions={stateOptions}
+            selectedState={selectedState}
+            onStateChange={setSelectedState}
+            stateFilterId="accident-reports-state-filter"
           />
         </Grid>
         <Grid xs={12} sm={6} lg={3}>
           <SummaryMetric
             title="Crime reports"
             value={accidentsLoading ? '—' : fNumber(insights.crimeCount)}
-            caption={`${INCIDENT_CRIME} reports in ${periodLabel}`}
+            caption={`${INCIDENT_CRIME} reports in ${periodLabel} · ${selectedStateLabel}`}
             color={theme.palette.error.main}
+            stateOptions={stateOptions}
+            selectedState={selectedState}
+            onStateChange={setSelectedState}
+            stateFilterId="crime-reports-state-filter"
           />
         </Grid>
         <Grid xs={12} sm={6} lg={3}>
           <SummaryMetric
             title="Estimated loss"
             value={accidentsLoading ? '—' : fNumber(insights.estimatedLoss)}
-            caption={`${fNumber(insights.companyCount)} companies in ${periodLabel}`}
+            caption={`${fNumber(insights.companyCount)} companies in ${periodLabel} · ${selectedStateLabel}`}
             color={theme.palette.info.main}
+            stateOptions={stateOptions}
+            selectedState={selectedState}
+            onStateChange={setSelectedState}
+            stateFilterId="estimated-loss-metric-state-filter"
           />
         </Grid>
 
@@ -475,13 +602,17 @@ export function OverviewAppView() {
             title={selectedMonth === ALL_MONTHS ? 'Monthly incident trend' : 'Daily incident trend'}
             subheader={
               selectedMonth === ALL_MONTHS
-                ? `Monthly reports by type in ${selectedYear}`
-                : `Daily reports by type in ${periodLabel}`
+                ? `Monthly reports by type in ${selectedYear} · ${selectedStateLabel}`
+                : `Daily reports by type in ${periodLabel} · ${selectedStateLabel}`
             }
             type="line"
             categories={insights.periodLabels}
             series={insights.monthlySeries}
             loading={accidentsLoading}
+            stateOptions={stateOptions}
+            selectedState={selectedState}
+            onStateChange={setSelectedState}
+            stateFilterId="incident-trend-state-filter"
             ariaLabel={
               selectedMonth === ALL_MONTHS
                 ? `Line chart of monthly reports by incident type in ${selectedYear}`
@@ -492,11 +623,15 @@ export function OverviewAppView() {
         <Grid xs={12} lg={4}>
           <InsightChartCard
             title="Incident type mix"
-            subheader={`Share of reports in ${periodLabel}`}
+            subheader={`Share of reports in ${periodLabel} · ${selectedStateLabel}`}
             type="donut"
             labels={insights.typeLabels}
             series={insights.typeValues}
             loading={accidentsLoading}
+            stateOptions={stateOptions}
+            selectedState={selectedState}
+            onStateChange={setSelectedState}
+            stateFilterId="incident-type-state-filter"
             height={360}
             ariaLabel="Donut chart comparing accident and crime report counts"
           />
@@ -506,14 +641,35 @@ export function OverviewAppView() {
             title="Estimated loss trend"
             subheader={
               selectedMonth === ALL_MONTHS
-                ? `Monthly loss estimates in ${selectedYear}`
-                : `Daily loss estimates in ${periodLabel}`
+                ? `Monthly loss estimates in ${selectedYear} · ${selectedStateLabel}`
+                : `Daily loss estimates in ${periodLabel} · ${selectedStateLabel}`
             }
             type="area"
             categories={insights.periodLabels}
             series={insights.monthlyLossSeries}
             loading={accidentsLoading}
+            stateOptions={stateOptions}
+            selectedState={selectedState}
+            onStateChange={setSelectedState}
+            stateFilterId="estimated-loss-state-filter"
             ariaLabel={`Estimated damage loss by incident type in ${periodLabel}`}
+          />
+        </Grid>
+
+        <Grid xs={12} lg={6}>
+          <InsightListCard
+            title="Accidents by current state"
+            subheader={`Current workflow state of reports in ${periodLabel}`}
+            items={insights.currentStateItems}
+            loading={accidentsLoading}
+          />
+        </Grid>
+        <Grid xs={12} lg={6}>
+          <InsightListCard
+            title="State changes"
+            subheader={`Workflow state changes recorded in ${periodLabel}`}
+            items={insights.stateChangeItems}
+            loading={accidentsLoading}
           />
         </Grid>
 

@@ -86,7 +86,7 @@ export function ProductNewEditForm({ currentProduct }) {
       setReload(r => !r);
     });
 
-  }, [ reload, currentProduct]);
+  }, [reload, currentProduct]);
 
   const {
     reset,
@@ -107,10 +107,7 @@ export function ProductNewEditForm({ currentProduct }) {
 
 
 
-
   const onSubmit = handleSubmit(async (data) => {
-    console.log({ data });
-    console.log("££££££££££££££££££££££££££££");
     try {
       if (!currentProduct) {
         const response = await axios.post(`/company/register`, data);

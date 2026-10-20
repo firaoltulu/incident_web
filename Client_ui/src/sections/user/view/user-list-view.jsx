@@ -69,6 +69,7 @@ const TABLE_HEAD = [
   { id: 'phoneNumber', label: 'Phone number', width: 180 },
   { id: 'company', label: 'Company', width: 220 },
   { id: 'role', label: 'Role', width: 180 },
+  { id: 'AddedDate', label: 'Added date', width: 180 },
   { id: 'status', label: 'Status', width: 100 },
   { id: '', width: 88 },
 ];
@@ -76,7 +77,7 @@ const TABLE_HEAD = [
 // ----------------------------------------------------------------------
 
 export function UserListView() {
-  const table = useTable();
+  const table = useTable({ defaultOrderBy: 'AddedDate', defaultOrder: 'desc' });
 
   const router = useRouter();
   // const URL = CONFIG.site.serverUrl;

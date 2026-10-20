@@ -11,6 +11,8 @@ import IconButton from '@mui/material/IconButton';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
+import { fTime, fDate } from 'src/utils/format-time';
+
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
@@ -67,6 +69,17 @@ export function UserTableRow({ row, selected, onEditRow, onSelectRow, onDeleteRo
             </Label>
           ))}
 
+        </TableCell>
+
+        <TableCell>
+          <Stack spacing={0.5}>
+            <Box component="span">{row.AddedDate ? fDate(row.AddedDate) : '-'}</Box>
+            {row.AddedDate && (
+              <Box component="span" sx={{ typography: 'caption', color: 'text.secondary' }}>
+                {fTime(row.AddedDate)}
+              </Box>
+            )}
+          </Stack>
         </TableCell>
 
         <TableCell>

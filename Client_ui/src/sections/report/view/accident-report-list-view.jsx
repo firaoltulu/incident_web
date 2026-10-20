@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
@@ -147,7 +147,6 @@ export function AccidentReportListView() {
 
   const [selectedRowIds, setSelectedRowIds] = useState([]);
 
-  const filterButtonEl = useRef(null);
   // console.log('***********************');
   // console.log(accidents);
   // console.log('***********************');
@@ -537,6 +536,7 @@ export function AccidentReportListView() {
     incident_type: true,
     accident_cause: true,
     company: true,
+    damage_estimated_value: true,
     specific_location: true,
     AddedDate: true,
     // All other fields default to false
@@ -767,9 +767,7 @@ export function AccidentReportListView() {
     //   renderCell: (params) => <RenderCellActionTaken params={params} />,
     // },
     {
-      // field: {tableData.incident_type === 'አደጋ' ?  'accident_property_damage_estimated_value': 'damaged_property_estimated_value'},
-      // field: 'accident_property_damage_estimated_value',
-
+      field: 'damage_estimated_value',
       headerName: 'Damage Estimated Value',
       flex: 1,
       minWidth: 360,
@@ -1005,7 +1003,6 @@ export function AccidentReportListView() {
         filters={filters}
         canReset={canReset}
         selectedRowIds={selectedRowIds}
-        filterButtonEl={filterButtonEl}
         filteredResults={dataFiltered.length}
         onOpenConfirmDeleteRows={confirmRows.onTrue}
         startDate={startDate}
@@ -1069,7 +1066,7 @@ export function AccidentReportListView() {
               noResultsOverlay: () => <EmptyContent title="No results found" />,
             }}
             slotProps={{
-              panel: { anchorEl: filterButtonEl.current, placement: 'bottom-end' },
+              panel: { placement: 'bottom-end' },
               columnsManagement: { getTogglableColumns },
             }}
             sx={{ [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' } }}
@@ -1110,7 +1107,6 @@ function CustomToolbar({
   filters,
   canReset,
   selectedRowIds,
-  filterButtonEl,
   filteredResults,
   onOpenConfirmDeleteRows,
   startDate,
@@ -1288,7 +1284,7 @@ function CustomToolbar({
             >
               Download Excel
             </Button>
-            <GridToolbarColumnsButton ref={filterButtonEl} />
+            <GridToolbarColumnsButton />
             {/* <GridToolbarFilterButton /> */}
             {/* <GridToolbarExport /> */}
           </Box>

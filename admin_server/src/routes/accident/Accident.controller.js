@@ -30,6 +30,7 @@ const { getAllButtons } = require("../../models/button/Button.model");
 
 const ACCIDENT_MODULE_ID = process.env.ACCIDENT_MODULE_ID;
 const USER_ROLE_ADMIN = process.env.USER_ROLE_ADMIN;
+const ADMINISTRATOR_ROLE_ID = "69afda7ce222d7d9af50ab1c";
 
 
 async function httpAddNewAccident(req, res) {
@@ -287,14 +288,45 @@ async function httpEditAccident(req, res) {
     }
 };
 
+async function httpDeleteAccident(req, res) {
+    try {
+        const { accidentId } = req.params;
+        const user = req.body?.user;
+        const userRoles = Array.isArray(user?.Roles) ? user.Roles : [];
+        const isAdmin = userRoles.some(
+            (role) => String(role?._id || role?.id || role) === ADMINISTRATOR_ROLE_ID
+        );
+
+        if (!isAdmin) {
+            return res.status(403).json({
+                message: "Only administrators can delete accidents",
+                reason: 5,
+            });
+        }
+
+        const result = await AbortAccidentById(accidentId);
+
+        if (result.done) {
+            return res.status(200).json({ message: "Accident successfully deleted", reason: 1 });
+        }
+
+        return res.status(404).json({ message: "Accident does not exist", reason: 2 });
+    } catch (error) {
+        console.error("Failed to delete accident:", error);
+        if (error.name === "CastError") {
+            return res.status(400).json({ message: "Invalid accident ID", reason: 3 });
+        }
+        return res.status(500).json({ message: "Failed to delete accident", reason: 4 });
+    }
+};
+
 
 module.exports = {
     httpAddNewAccident,
     httpListAccident,
     httpGetAccident,
     httpEditAccidentState,
-    httpEditAccident
+    httpEditAccident,
+    httpDeleteAccident
     // httpListGroupAccident,
 };
-
-

@@ -22,6 +22,7 @@ import { RouterLink } from 'src/routes/components';
 import { useBoolean } from 'src/hooks/use-boolean';
 import { useSetState } from 'src/hooks/use-set-state';
 
+import axios from 'src/utils/axios';
 import { fIsAfter, fIsBetween } from 'src/utils/format-time';
 
 import { varAlpha } from 'src/theme/styles';
@@ -47,6 +48,8 @@ import {
   TablePaginationCustom,
 } from 'src/components/table';
 
+import { useAuthContext } from 'src/auth/hooks';
+
 import { AccidentTableRow } from '../accident-table-row';
 import { AccidentTableToolbar } from '../accident-table-toolbar';
 import { AccidentTableFiltersResult } from '../accident-table-filters-result';
@@ -66,6 +69,9 @@ const TABLE_HEAD = [
 
   { id: '', width: 88 },
 ];
+
+const ADMINISTRATOR_ROLE_ID = '69afda7ce222d7d9af50ab1c';
+
 // const TABLE_HEAD = [
 //   { id: 'AccidentID', label: 'Id', width: 88 },
 //   { id: 'company.name', label: 'company', width: 140 },
@@ -86,6 +92,10 @@ export function AccidentListView() {
   const table = useTable();
 
   const router = useRouter();
+  const { user: currentUser } = useAuthContext();
+  const canDeleteAccidents = currentUser?.Roles?.some(
+    (role) => String(role?._id || role?.id || role) === ADMINISTRATOR_ROLE_ID
+  );
 
   const { accidents, accidentsLoading } = useGetAccident({
     index: table.page,
@@ -159,16 +169,17 @@ export function AccidentListView() {
   const notFound = !accidentsLoading && !dataFiltered.length;
 
   const handleDeleteRow = useCallback(
-    (id) => {
-      const deleteRow = tableData.filter((row) => row.id !== id);
-
-      toast.success('Delete success!');
-
-      setTableData(deleteRow);
-
-      table.onUpdatePageDeleteRow(dataInPage.length);
+    async (id) => {
+      try {
+        await axios.delete(`/accident/delete/${id}`, { data: {} });
+        setTableData((rows) => rows.filter((row) => row._id !== id));
+        toast.success('Delete success!');
+        table.onUpdatePageDeleteRow(dataInPage.length);
+      } catch (error) {
+        toast.error(error?.message || 'Delete failed!');
+      }
     },
-    [dataInPage.length, table, tableData]
+    [dataInPage.length, table]
   );
 
   const handleDeleteRows = useCallback(() => {
@@ -334,6 +345,7 @@ export function AccidentListView() {
                             onSelectRow={() => table.onSelectRow(row._id)}
                             onDeleteRow={() => handleDeleteRow(row._id)}
                             onViewRow={() => handleViewRow(row._id)}
+                            canDelete={canDeleteAccidents}
                           />
                         ))}
 

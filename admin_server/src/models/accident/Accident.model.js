@@ -174,8 +174,8 @@ async function EditAccidentById(AccidentID = "", body = null) {
     return { done: false, accident: null };
 }
 
-async function AbortAccidentById(AccidentID) {
-    const aborted = await Accidentdatabase.deleteOne({ AccidentID: AccidentID });
+async function AbortAccidentById(accidentId) {
+    const aborted = await Accidentdatabase.deleteOne({ _id: accidentId });
     if (aborted.deletedCount === 1) {
         return { done: true };
     }

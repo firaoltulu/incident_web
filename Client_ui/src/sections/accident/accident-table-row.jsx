@@ -24,7 +24,14 @@ const shortId = (id, length = 8) => (id ? `${id.slice(0, length)}...` : '');
 
 // ----------------------------------------------------------------------
 
-export function AccidentTableRow({ row, selected, onViewRow, onSelectRow, onDeleteRow }) {
+export function AccidentTableRow({
+  row,
+  selected,
+  onViewRow,
+  onSelectRow,
+  onDeleteRow,
+  canDelete = false,
+}) {
   const confirm = useBoolean();
 
   const collapse = useBoolean();
@@ -33,9 +40,6 @@ export function AccidentTableRow({ row, selected, onViewRow, onSelectRow, onDele
 
   const short = shortId(row._id, 8);
 
-  console.log('*****row********');
-  console.log(row);
-  console.log('*****row********');
   const renderPrimary = (
     <TableRow hover selected={selected}>
       {/* <TableCell padding="checkbox">
@@ -211,16 +215,17 @@ export function AccidentTableRow({ row, selected, onViewRow, onSelectRow, onDele
         slotProps={{ arrow: { placement: 'right-top' } }}
       >
         <MenuList>
-          {/* <MenuItem
+          <MenuItem
             onClick={() => {
               confirm.onTrue();
               popover.onClose();
             }}
             sx={{ color: 'error.main' }}
+            disabled={!canDelete}
           >
             <Iconify icon="solar:trash-bin-trash-bold" />
             Delete
-          </MenuItem> */}
+          </MenuItem>
 
           <MenuItem
             onClick={() => {
@@ -240,7 +245,15 @@ export function AccidentTableRow({ row, selected, onViewRow, onSelectRow, onDele
         title="Delete"
         content="Are you sure want to delete?"
         action={
-          <Button variant="contained" color="error" onClick={onDeleteRow}>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={!canDelete}
+            onClick={() => {
+              onDeleteRow();
+              confirm.onFalse();
+            }}
+          >
             Delete
           </Button>
         }

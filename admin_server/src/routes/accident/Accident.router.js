@@ -7,7 +7,8 @@ const {
     httpGetAccident,
     httpEditAccidentState,
     // httpListGroupAccident,
-    httpEditAccident
+    httpEditAccident,
+    httpDeleteAccident
 } = require("./Accident.controller");
 
 const { verifySign } = require("../../services/jwt");
@@ -19,7 +20,8 @@ AccidentRouter.use(async (req, res, next) => {
     console.log("started");
     try {
 
-        const body = req.body;
+        const body = req.body || {};
+        req.body = body;
         let headers = [];
         // console.log(req.headers);
         // for (let i = 0; i < req.headers["authorization"].length; i += 2) {
@@ -97,5 +99,6 @@ AccidentRouter.get("/details/:accidentId", httpGetAccident);
 AccidentRouter.put("/workflow/:accidentId", httpEditAccidentState);
 // AccidentRouter.get("/listgroup", httpListGroupCompany);
 AccidentRouter.put("/edit/:accidentId", httpEditAccident);
+AccidentRouter.delete("/delete/:accidentId", httpDeleteAccident);
 
 module.exports = AccidentRouter;

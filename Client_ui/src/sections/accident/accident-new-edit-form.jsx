@@ -8,9 +8,12 @@ import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import Card from '@mui/material/Card';
 import Tabs from '@mui/material/Tabs';
+import Step from '@mui/material/Step';
 import Stack from '@mui/material/Stack';
+import Stepper from '@mui/material/Stepper';
 import Divider from '@mui/material/Divider';
 import { alpha } from '@mui/material/styles';
+import StepLabel from '@mui/material/StepLabel';
 import CardHeader from '@mui/material/CardHeader';
 import Typography from '@mui/material/Typography';
 import LoadingButton from '@mui/lab/LoadingButton';
@@ -38,6 +41,17 @@ import { AccidentDetailsToolbar } from './accident-details-toolbar';
 // -----------------------------------------------------------------------
 
 const NONE = 'የለም';
+
+const FORM_STEPS = [
+  {
+    id: 'incident-details',
+    label: 'የክስተቱ መረጃ',
+    fields: ['incident_date', 'incident_time', 'specific_location'],
+  },
+  { id: 'incident-summary', label: 'የክስተቱ ዝርዝር', fields: ['incident_summary'] },
+  { id: 'response-follow-up', label: 'እርምጃዎችና ክትትል', fields: [], crimeOnly: true },
+  { id: 'reporter', label: 'ሪፖርት አድራጊ', fields: ['reporter_name', 'report_date'] },
+];
 
 const region = [
   'አዲስ አበባ',
@@ -482,6 +496,10 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
   const { workflows, workflowsLoading } = useWorkflowContext();
   const { buttons, buttonsLoading } = useButtonContext();
   const { user } = useAuthContext();
+  const [activeStep, setActiveStep] = useState(0);
+  const hasCurrentAccident = Boolean(currentAccident);
+  const currentAccidentId = currentAccident?._id;
+  const currentAccidentType = currentAccident?.incident_type;
 
   const docWorkFlow = Array.isArray(workflows)
     ? workflows.find((row) => String(row.Module?._id) === String(ACCIDENT_MODULE_ID))
@@ -498,6 +516,9 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
           stateId: currentAccident.state?._id,
           userRoles: user?.Roles || [],
         })));
+  const visibleSteps = FORM_STEPS.filter(
+    (step) => !step.crimeOnly || incidentType === 'ወንጀል'
+  );
 
   const defaultValues = useMemo(
     () => ({
@@ -596,6 +617,19 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
     formState: { isSubmitting },
   } = methods;
 
+  const handleNextStep = async () => {
+    const { fields } = visibleSteps[activeStep];
+    const isStepValid = fields.length === 0 || (await methods.trigger(fields));
+
+    if (isStepValid) {
+      setActiveStep((step) => Math.min(step + 1, visibleSteps.length - 1));
+    }
+  };
+
+  const handlePreviousStep = () => {
+    setActiveStep((step) => Math.max(step - 1, 0));
+  };
+
   useEffect(() => {
     if (currentAccident && !workflowsLoading && !buttonsLoading && docWorkFlow) {
       const found_actions = getAvailableWorkflowActions({
@@ -620,9 +654,15 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
   useEffect(() => {
     if (currentAccident && !workflowsLoading && !buttonsLoading) {
       reset(defaultValues);
-      // setIncidentType('ወንጀል');
     }
   }, [currentAccident, defaultValues, reset, workflowsLoading, buttonsLoading]);
+
+  useEffect(() => {
+    if (hasCurrentAccident) {
+      setIncidentType(currentAccidentType || 'ወንጀል');
+      setActiveStep(0);
+    }
+  }, [hasCurrentAccident, currentAccidentId, currentAccidentType]);
 
   const onSubmit = handleSubmit(async (data) => {
     try {
@@ -1399,41 +1439,158 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
   );
 
   const handlePrint = () => {
-    const printContents = document.getElementById('print-accident').innerHTML;
-    const originalContents = document.body.innerHTML;
-    document.body.innerHTML = printContents;
-    window.print();
-    document.body.innerHTML = originalContents;
-    window.location.reload();
+    const report = document.getElementById('print-accident');
+    if (!report) {
+      toast.error('የሚታተመው ሪፖርት አልተገኘም።');
+      return;
+    }
+
+    const printFrame = document.createElement('iframe');
+    printFrame.title = 'የወንጀል/አደጋ ሪፖርት';
+    printFrame.setAttribute('aria-hidden', 'true');
+    printFrame.tabIndex = -1;
+    printFrame.style.position = 'fixed';
+    printFrame.style.width = '100vw';
+    printFrame.style.height = '100vh';
+    printFrame.style.left = '-10000px';
+    printFrame.style.top = '0';
+    printFrame.style.border = '0';
+    document.body.appendChild(printFrame);
+
+    const printDocument = printFrame.contentDocument;
+    const printWindow = printFrame.contentWindow;
+    if (!printDocument || !printWindow) {
+      printFrame.remove();
+      toast.error('የህትመት መስኮቱን መክፈት አልተቻለም።');
+      return;
+    }
+
+    const printableReport = report.cloneNode(true);
+    printableReport.style.display = 'block';
+    printableReport.style.position = 'static';
+    printableReport.style.width = 'auto';
+
+    printDocument.open();
+    printDocument.write(
+      `<!doctype html><html lang="am"><head><meta charset="UTF-8" /><title>የወንጀል/አደጋ ሪፖርት</title></head><body></body></html>`
+    );
+    printDocument.body.appendChild(printableReport);
+    printDocument.close();
+
+    printWindow.addEventListener(
+      'afterprint',
+      () => printFrame.remove(),
+      { once: true }
+    );
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const stepContent = {
+    'incident-details': (
+      <Stack spacing={3}>
+        {renderSection1}
+        {renderSection3}
+        <Card sx={cardSx}>
+          <Stack spacing={2} sx={{ p: 2 }}>
+            <Typography variant="subtitle1" sx={sectionTitleSx}>
+              የክስተት አይነት
+            </Typography>
+
+            <Tabs
+              value={incidentType}
+              onChange={(event, newValue) => {
+                setIncidentType(newValue);
+                methods.setValue('incident_type', newValue);
+              }}
+              TabIndicatorProps={{ style: { display: 'none' } }}
+              sx={{
+                minHeight: 44,
+                '& .MuiTab-root': {
+                  minHeight: 44,
+                  minWidth: 100,
+                  borderRadius: 1,
+                  fontFamily: AMHARIC_FONT,
+                },
+                '& .Mui-selected': {
+                  color: 'primary.contrastText !important',
+                  bgcolor: 'primary.main',
+                },
+              }}
+            >
+              <Tab label="ወንጀል" value="ወንጀል" disabled={!canEdit} />
+              <Tab label="አደጋ" value="አደጋ" disabled={!canEdit} />
+            </Tabs>
+          </Stack>
+        </Card>
+      </Stack>
+    ),
+    'incident-summary': (
+      <Stack spacing={3}>
+        {incidentType === 'ወንጀል' ? renderSection4 : renderSection5}
+        {renderSection6}
+      </Stack>
+    ),
+    'response-follow-up': (
+      <Stack spacing={3}>
+        {incidentType === 'ወንጀል' && renderSection7}
+        {incidentType === 'ወንጀል' && renderSection8}
+        {incidentType === 'ወንጀል' && renderSection9}
+        {incidentType === 'ወንጀል' && renderSection10}
+      </Stack>
+    ),
+    reporter: (
+      <Stack spacing={3}>
+        {renderSection11}
+        {renderSection12}
+      </Stack>
+    ),
   };
 
   const renderActions = (
-    <Box display="flex" alignItems="center" flexWrap="wrap">
-      <LoadingButton
-        type="submit"
-        variant="contained"
-        size="large"
-        loading={isSubmitting}
-        sx={{ ml: 2 }}
-        disabled={!canEdit}
-      >
-        {!currentAccident ? 'ሪፖርት መዝግብ' : 'ለውጦችን አስቀምጥ'}
-      </LoadingButton>
+    <Stack
+      direction={{ xs: 'column-reverse', sm: 'row' }}
+      alignItems={{ xs: 'stretch', sm: 'center' }}
+      justifyContent="space-between"
+      spacing={2}
+      sx={{ pt: 1 }}
+    >
+      <Stack direction="row" spacing={1.5}>
+        {activeStep > 0 && (
+          <Button variant="outlined" color="inherit" onClick={handlePreviousStep}>
+            ተመለስ
+          </Button>
+        )}
 
-      {currentAccident && (
-        <Button
-          id="print"
-          color="inherit"
-          variant="outlined"
-          sx={{ ml: 2 }}
-          size="large"
-          startIcon={<Iconify icon="solar:printer-minimalistic-bold" />}
-          onClick={handlePrint}
-        >
-          አትም
+        {currentAccident && (
+          <Button
+            id="print"
+            color="inherit"
+            variant="outlined"
+            startIcon={<Iconify icon="solar:printer-minimalistic-bold" />}
+            onClick={handlePrint}
+          >
+            አትም
+          </Button>
+        )}
+      </Stack>
+
+      {activeStep < visibleSteps.length - 1 ? (
+        <Button variant="contained" onClick={handleNextStep}>
+          ቀጥል
         </Button>
+      ) : (
+        <LoadingButton
+          type="submit"
+          variant="contained"
+          size="large"
+          loading={isSubmitting}
+          disabled={!canEdit}
+        >
+          {!currentAccident ? 'ሪፖርት መዝግብ' : 'ለውጦችን አስቀምጥ'}
+        </LoadingButton>
       )}
-    </Box>
+    </Stack>
   );
 
   return (
@@ -1473,71 +1630,37 @@ export function AccidentNewEditForm({ currentAccident, loading, loaderror, onAcc
             '& .MuiPickersSectionList-sectionContent': { fontFamily: AMHARIC_FONT },
           }}
         >
-          {renderSection1}
-          {/* {renderSection2} */}
-          {renderSection3}
           <Card sx={cardSx}>
-            <Stack spacing={2} sx={{ p: 2 }}>
-              <Typography variant="subtitle1" sx={sectionTitleSx}>
-                የክስተት አይነት
-              </Typography>
-
-              <Tabs
-                value={currentAccident?.incident_type || incidentType}
-                onChange={(event, newValue) => {
-                  setIncidentType(newValue);
-                  methods.setValue('incident_type', newValue);
+            <CardHeader
+              title={visibleSteps[activeStep].label}
+              subheader={`ደረጃ ${activeStep + 1} ከ ${visibleSteps.length}`}
+              sx={cardHeaderSx}
+            />
+            <Divider />
+            <Box sx={{ px: { xs: 1, sm: 3 }, py: 3, overflowX: 'auto' }}>
+              <Stepper
+                activeStep={activeStep}
+                alternativeLabel
+                sx={{
+                  minWidth: { xs: 520, sm: 'auto' },
+                  '& .MuiStepLabel-label': {
+                    mt: 1,
+                    fontFamily: AMHARIC_FONT,
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  },
+                  '& .MuiStepIcon-root.Mui-active': { color: 'primary.main' },
+                  '& .MuiStepIcon-root.Mui-completed': { color: 'success.main' },
                 }}
-                TabIndicatorProps={{ style: { display: 'none' } }}
               >
-                <Tab
-                  label="ወንጀል"
-                  value="ወንጀል"
-                  disabled={!canEdit}
-                  sx={{
-                    fontSize: '1.2rem',
-                    borderRadius: '8px',
-                    '&.Mui-selected': {
-                      backgroundColor: 'primary.main',
-                      color: '#fff',
-                      p: '7px',
-                    },
-                  }}
-                />
-                <Tab
-                  label="አደጋ"
-                  value="አደጋ"
-                  disabled={!canEdit}
-                  sx={{
-                    fontSize: '1.2rem',
-                    borderRadius: '8px',
-                    '&.Mui-selected': {
-                      backgroundColor: 'primary.main',
-                      color: '#fff',
-                      px: '6px',
-                      py: '2px',
-                    },
-                  }}
-                />
-              </Tabs>
-            </Stack>
+                {visibleSteps.map((step) => (
+                  <Step key={step.label}>
+                    <StepLabel>{step.label}</StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
+            </Box>
           </Card>
-          {incidentType === 'ወንጀል' && renderSection4}
-
-          {incidentType === 'አደጋ' && renderSection5}
-          {/* {renderSection4}
-          {renderSection5} */}
-          {renderSection6}
-          {incidentType === 'ወንጀል' && renderSection7}
-          {/* {renderSection7} */}
-          {/* {renderSection8} */}
-          {incidentType === 'ወንጀል' && renderSection8}
-          {incidentType === 'ወንጀል' && renderSection9}
-          {/* {renderSection9} */}
-          {/* {renderSection10} */}
-          {incidentType === 'ወንጀል' && renderSection10}
-          {renderSection11}
-          {renderSection12}
+          {stepContent[visibleSteps[activeStep].id]}
           {renderActions}
         </Stack>
       </Form>

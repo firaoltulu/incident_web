@@ -16,7 +16,10 @@ const swrOptions = {
 export function useGetRoles() {
   const url = endpoints.role.list;
 
-  const { data, isLoading, error, isValidating } = useSWR(url, fetcher, swrOptions);
+  const { data, isLoading, error, isValidating } = useSWR(url, fetcher, {
+    ...swrOptions,
+    revalidateOnMount: true,
+  });
 
   const memoizedValue = useMemo(
     () => ({

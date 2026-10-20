@@ -46,7 +46,7 @@ export function TourNewEditForm({ currentRole }) {
     () => ({
       name: currentRole?.Name || '',
       description: currentRole?.Description || '',
-      isActive: { enabled: currentRole?.IsActive || false },
+      isActive: { enabled: currentRole?.IsActive || true },
       modules: (currentRole?.Modules || []).map((m) =>
         typeof m === 'string' ? { value: m, label: m } : 'value' in m ? m : { value: m._id || '', label: m.Name || '' }
       ),
@@ -133,7 +133,7 @@ export function TourNewEditForm({ currentRole }) {
         </Stack>
 
         <Stack direction="row" alignItems="center" spacing={3}>
-          <Field.Switch name="isActive.enabled" label="Is Active" sx={{ m: 0 }} disabled={!!currentRole} />
+          <Field.Switch name="isActive.enabled" label="Is Active" sx={{ m: 0 }} disabled />
         </Stack>
 
       </Stack>

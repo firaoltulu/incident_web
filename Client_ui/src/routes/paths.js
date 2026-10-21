@@ -49,7 +49,7 @@ export const paths = {
     permission: `${ROOTS.DASHBOARD}/permission`,
 
     user: {
-      root: `${ROOTS.DASHBOARD}/user`,
+      root: `${ROOTS.DASHBOARD}/user/list`,
       new: `${ROOTS.DASHBOARD}/user/new`,
       list: `${ROOTS.DASHBOARD}/user/list`,
       cards: `${ROOTS.DASHBOARD}/user/cards`,

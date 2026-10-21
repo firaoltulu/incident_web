@@ -89,6 +89,19 @@ const accident_cause_options = [
   'የተሸከርካሪ አደጋ',
 ];
 
+const NO_STATE = '__no_state__';
+
+function getAccidentStateId(state) {
+  if (state?._id != null) return String(state._id);
+  if (state?.id != null) return String(state.id);
+  if (typeof state === 'string' || typeof state === 'number') return String(state);
+  return NO_STATE;
+}
+
+function getAccidentStateName(state) {
+  return state?.Name || state?.name || getAccidentStateId(state);
+}
+
 const ACCIDENT_SCHEMA_FIELDS = [
   'incident_date',
   'incident_time',
@@ -138,6 +151,7 @@ export function AccidentReportListView() {
   const [incidentType, setIncidentType] = useState('');
 
   const [incidentCategory, setIncidentCategory] = useState('');
+  const [currentState, setCurrentState] = useState('');
 
   const { accidents, accidentsLoading } = useGetAccident();
 
@@ -146,6 +160,20 @@ export function AccidentReportListView() {
   const [tableData, setTableData] = useState([]);
 
   const [selectedRowIds, setSelectedRowIds] = useState([]);
+
+  const stateOptions = useMemo(() => {
+    const states = new Map();
+
+    tableData.forEach((accident) => {
+      const id = getAccidentStateId(accident.state);
+      const name = id === NO_STATE ? 'No state assigned' : getAccidentStateName(accident.state);
+      states.set(id, name);
+    });
+
+    return [...states.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [tableData]);
 
   // console.log('***********************');
   // console.log(accidents);
@@ -633,6 +661,7 @@ export function AccidentReportListView() {
     endDate,
     incidentType,
     incidentCategory,
+    currentState,
   });
 
   const handleDeleteRows = useCallback(() => {
@@ -1013,6 +1042,9 @@ export function AccidentReportListView() {
         setIncidentType={setIncidentType}
         incidentCategory={incidentCategory}
         setIncidentCategory={setIncidentCategory}
+        currentState={currentState}
+        setCurrentState={setCurrentState}
+        stateOptions={stateOptions}
         handleExportSummaryReport={handleExportSummaryReport}
         handleExportExcel={handleExportExcel}
       />
@@ -1027,6 +1059,8 @@ export function AccidentReportListView() {
       endDate,
       incidentType,
       incidentCategory,
+      currentState,
+      stateOptions,
       handleExportSummaryReport,
       handleExportExcel,
     ]
@@ -1117,6 +1151,9 @@ function CustomToolbar({
   setIncidentType,
   incidentCategory,
   setIncidentCategory,
+  currentState,
+  setCurrentState,
+  stateOptions,
   handleExportSummaryReport,
   handleExportExcel,
 }) {
@@ -1255,6 +1292,21 @@ function CustomToolbar({
                 </MenuItem>
               ))}
             </TextField>
+            <TextField
+              select
+              size="small"
+              label="Current State"
+              value={currentState}
+              onChange={(e) => setCurrentState(e.target.value)}
+              sx={{ minWidth: 230 }}
+            >
+              <MenuItem value="">All states</MenuItem>
+              {stateOptions.map((state) => (
+                <MenuItem key={state.id} value={state.id}>
+                  {state.name}
+                </MenuItem>
+              ))}
+            </TextField>
           </Stack>
           {/* {!!selectedRowIds.length && (
             <Button
@@ -1302,7 +1354,15 @@ function CustomToolbar({
   );
 }
 
-function applyFilter({ inputData, filters, startDate, endDate, incidentType, incidentCategory }) {
+function applyFilter({
+  inputData,
+  filters,
+  startDate,
+  endDate,
+  incidentType,
+  incidentCategory,
+  currentState,
+}) {
   const { stock, publish } = filters;
 
   let filteredData = [...inputData];
@@ -1349,6 +1409,12 @@ function applyFilter({ inputData, filters, startDate, endDate, incidentType, inc
 
       return categoryValue === incidentCategory;
     });
+  }
+
+  if (currentState) {
+    filteredData = filteredData.filter(
+      (item) => getAccidentStateId(item.state) === currentState
+    );
   }
   // *************
 

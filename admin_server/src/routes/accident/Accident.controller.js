@@ -15,7 +15,10 @@ const {
 
 const { existsWorkFlowWithModuleId } = require("../../models/workflow/WorkFlow.model");
 
-const { existsCompanyWithId } = require("../../models/company/Company.model");
+const {
+    existsCompanyWithId,
+    getDescendantCompaniesByParentGroup
+} = require("../../models/company/Company.model");
 
 const { getAvailableWorkflowActions, canEditDocument } = require("../../services/workflowEngine");
 
@@ -87,7 +90,16 @@ async function httpListAccident(req, res) {
         const userRoles = body.user.Roles.map((row) => String(row._id))
 
         if (!userRoles.includes(USER_ROLE_ADMIN)) {
-            const response = await getAllCompanyAccident(0, 0, body?.user?.Company);
+            const userCompanyId = body?.user?.Company;
+            const userCompany = await existsCompanyWithId(userCompanyId);
+            const companyIDs = [userCompanyId];
+
+            if (userCompany?.IsGroup) {
+                const descendantCompanies = await getDescendantCompaniesByParentGroup(userCompany.CompanyID);
+                companyIDs.push(...descendantCompanies.map((company) => company._id));
+            }
+
+            const response = await getAllCompanyAccident(0, 0, companyIDs);
             return res.status(200).json({ message: "Accident get was successful!!", reason: 1, accidents: response });
         }
         else {

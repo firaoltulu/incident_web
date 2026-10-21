@@ -234,8 +234,8 @@ export function TourListView() {
             columns={columns}
             loading={rolesLoading}
             getRowHeight={() => 'auto'}
-            pageSizeOptions={[5, 10, 25]}
-            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+            pageSizeOptions={[20, 100, 200]}
+            initialState={{ pagination: { paginationModel: { pageSize: 20 } } }}
             columnVisibilityModel={columnVisibilityModel}
             onColumnVisibilityModelChange={(newModel) => setColumnVisibilityModel(newModel)}
             slots={{

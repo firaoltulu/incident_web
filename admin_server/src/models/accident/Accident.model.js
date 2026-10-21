@@ -127,7 +127,7 @@ async function getAllAccident(skip = 0, limit = 0) {
         .populate({ path: 'state', select: { __v: 0 } })
         .populate({ path: 'stateHistory.state', select: { __v: 0 } })
         .populate({ path: 'stateHistory.by', select: { __v: 0, PasswordHash: 0 } })
-        .sort({ AccidentID: 1 })
+        .sort({ AddedDate: -1 })
         .skip(skip)
         .limit(limit);
 }
@@ -182,9 +182,13 @@ async function AbortAccidentById(accidentId) {
     return { done: false };
 }
 
-async function getAllCompanyAccident(skip = 0, limit = 0, companyID) {
+async function getAllCompanyAccident(skip = 0, limit = 0, companyIDs) {
+    const companyFilter = Array.isArray(companyIDs)
+        ? { company: { $in: companyIDs } }
+        : { company: companyIDs };
+
     return await Accidentdatabase
-        .find({ company: companyID }, { __v: 0 })
+        .find(companyFilter, { __v: 0 })
         .populate({ path: 'company', select: { __v: 0 } })
         .populate({ path: 'state', select: { __v: 0 } })
         .populate({ path: 'stateHistory.state', select: { __v: 0 } })

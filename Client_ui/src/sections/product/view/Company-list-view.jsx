@@ -1,8 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 
+import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import ToggleButton from '@mui/material/ToggleButton';
+import { TreeItem, SimpleTreeView } from '@mui/x-tree-view';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import {
   DataGrid,
   gridClasses,
@@ -64,6 +70,7 @@ export function ProductListView() {
   const filters = useSetState({ publish: [], stock: [] });
 
   const [tableData, setTableData] = useState([]);
+  const [viewMode, setViewMode] = useState('list');
 
   const [companyToDelete, setCompanyToDelete] = useState(null);
   const [isDeletingCompany, setIsDeletingCompany] = useState(false);
@@ -94,6 +101,8 @@ export function ProductListView() {
   const canReset = filters.state.publish.length > 0 || filters.state.stock.length > 0;
 
   const dataFiltered = applyFilter({ inputData: tableData, filters: filters.state });
+
+  const companyTree = useMemo(() => buildCompanyTree(dataFiltered), [dataFiltered]);
 
   const handleDeleteRow = useCallback(async () => {
     if (!canDeleteCompanies || !companyToDelete || isDeletingCompany) return;
@@ -220,14 +229,33 @@ export function ProductListView() {
             { name: 'List' },
           ]}
           action={
-            <Button
-              component={RouterLink}
-              href={paths.dashboard.service.new}
-              variant="contained"
-              startIcon={<Iconify icon="mingcute:add-line" />}
-            >
-              New Company
-            </Button>
+            <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1}>
+              <ToggleButtonGroup
+                size="small"
+                value={viewMode}
+                exclusive
+                aria-label="Company view"
+                onChange={(event, nextView) => {
+                  if (nextView) setViewMode(nextView);
+                }}
+                sx={{ '& .MuiToggleButton-root': { minHeight: 40, px: 2 } }}
+              >
+                <ToggleButton value="list" aria-label="List view">
+                  List
+                </ToggleButton>
+                <ToggleButton value="tree" aria-label="Tree view">
+                  Tree
+                </ToggleButton>
+              </ToggleButtonGroup>
+              <Button
+                component={RouterLink}
+                href={paths.dashboard.service.new}
+                variant="contained"
+                startIcon={<Iconify icon="mingcute:add-line" />}
+              >
+                New Company
+              </Button>
+            </Stack>
           }
           sx={{ mb: { xs: 3, md: 5 } }}
         />
@@ -241,29 +269,46 @@ export function ProductListView() {
           }}
         >
 
-          <DataGrid
-            checkboxSelection={false}
-            disableRowSelectionOnClick
-            rows={dataFiltered}
-            columns={columns}
-            loading={companiesLoading}
-            getRowHeight={() => 'auto'}
-            pageSizeOptions={[5, 10, 25]}
-            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-            columnVisibilityModel={columnVisibilityModel}
-            onColumnVisibilityModelChange={(newModel) => setColumnVisibilityModel(newModel)}
-            slots={{
-              toolbar: CustomToolbarCallback,
-              noRowsOverlay: () => <EmptyContent />,
-              noResultsOverlay: () => <EmptyContent title="No results found" />,
-            }}
-            slotProps={{
-              panel: { anchorEl: filterButtonEl },
-              toolbar: { setFilterButtonEl },
-              columnsManagement: { getTogglableColumns },
-            }}
-            sx={{ [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' } }}
-          />
+          {viewMode === 'list' ? (
+            <DataGrid
+              checkboxSelection={false}
+              disableRowSelectionOnClick
+              rows={dataFiltered}
+              columns={columns}
+              loading={companiesLoading}
+              getRowHeight={() => 'auto'}
+              pageSizeOptions={[20, 100, 200]}
+              initialState={{ pagination: { paginationModel: { pageSize: 20 } } }}
+              columnVisibilityModel={columnVisibilityModel}
+              onColumnVisibilityModelChange={(newModel) => setColumnVisibilityModel(newModel)}
+              slots={{
+                toolbar: CustomToolbarCallback,
+                noRowsOverlay: () => <EmptyContent />,
+                noResultsOverlay: () => <EmptyContent title="No results found" />,
+              }}
+              slotProps={{
+                panel: { anchorEl: filterButtonEl },
+                toolbar: { setFilterButtonEl },
+                columnsManagement: { getTogglableColumns },
+              }}
+              sx={{ [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' } }}
+            />
+          ) : (
+            <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
+              {companiesLoading ? (
+                <EmptyContent title="Loading companies..." />
+              ) : companyTree.length ? (
+                <SimpleTreeView
+                  aria-label="Company hierarchy"
+                  defaultExpandedItems={companyTree.map((node) => node.id)}
+                >
+                  {companyTree.map((node) => renderCompanyTreeNode(node, handleViewRow))}
+                </SimpleTreeView>
+              ) : (
+                <EmptyContent title="No companies found" />
+              )}
+            </Box>
+          )}
 
         </Card>
 
@@ -349,4 +394,81 @@ function applyFilter({ inputData, filters }) {
   }
 
   return inputData;
+}
+
+function buildCompanyTree(companies) {
+  const nodes = companies.map((company) => ({
+    company,
+    id: String(company.id || company._id),
+    parentId: String(company.ParentGroup?.parentId || ''),
+    children: [],
+  }));
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const roots = [];
+
+  nodes.forEach((node) => {
+    const parent = nodesById.get(node.parentId);
+
+    if (parent && parent.id !== node.id) {
+      parent.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  const visitedIds = new Set();
+  const markVisited = (node) => {
+    if (visitedIds.has(node.id)) return;
+    visitedIds.add(node.id);
+    node.children.forEach(markVisited);
+  };
+
+  roots.forEach(markVisited);
+  nodes.forEach((node) => {
+    if (!visitedIds.has(node.id)) {
+      roots.push(node);
+      markVisited(node);
+    }
+  });
+
+  return roots;
+}
+
+function renderCompanyTreeNode(node, onViewRow, renderedIds = new Set()) {
+  if (renderedIds.has(node.id)) return null;
+  renderedIds.add(node.id);
+
+  return (
+    <TreeItem
+      key={node.id}
+      itemId={node.id}
+      label={
+        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+          <Link
+            component="button"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onViewRow(node.id);
+            }}
+            sx={{
+              color: 'text.primary',
+              cursor: 'pointer',
+              textAlign: 'left',
+              typography: 'body2',
+              textDecoration: 'none',
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
+            {node.company.Name}
+          </Link>
+          <Typography variant="caption" color="text.secondary">
+            {node.company.IsGroup ? 'Group' : 'Company'}
+          </Typography>
+        </Stack>
+      }
+    >
+      {node.children.map((child) => renderCompanyTreeNode(child, onViewRow, renderedIds))}
+    </TreeItem>
+  );
 }

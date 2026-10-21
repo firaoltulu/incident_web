@@ -71,20 +71,6 @@ const TABLE_HEAD = [
   { id: '', width: 88 },
 ];
 
-// const TABLE_HEAD = [
-//   { id: 'AccidentID', label: 'Id', width: 88 },
-//   { id: 'company.name', label: 'company', width: 140 },
-//   { id: 'region', label: 'Location', width: 140 },
-
-//   { id: 'accident_cause', label: 'Incident Cause' },
-//   { id: 'incident_victim_count', label: 'Victim Count' },
-//   // { id: 'statusOfCase', label: 'Status Of Case' },
-
-//   { id: 'AddedDate', label: 'AddedDate' },
-
-//   { id: '', width: 88 },
-// ];
-
 // ------------------------------l----------------------------------------
 
 export function AccidentListView() {
@@ -375,6 +361,7 @@ export function AccidentListView() {
             onChangeDense={table.onChangeDense}
             onRowsPerPageChange={table.onChangeRowsPerPage}
           />
+          
         </Card>
       </DashboardContent>
 

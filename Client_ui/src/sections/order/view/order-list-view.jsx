@@ -225,8 +225,8 @@ export function OrderListView() {
             columns={columns}
             loading={workflowsLoading}
             getRowHeight={() => 'auto'}
-            pageSizeOptions={[5, 10, 25]}
-            initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+            pageSizeOptions={[20, 100, 200]}
+            initialState={{ pagination: { paginationModel: { pageSize: 20 } } }}
             onRowSelectionModelChange={(newSelectionModel) => setSelectedRowIds(newSelectionModel)}
             columnVisibilityModel={columnVisibilityModel}
             onColumnVisibilityModelChange={(newModel) => setColumnVisibilityModel(newModel)}

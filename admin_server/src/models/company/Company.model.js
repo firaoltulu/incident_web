@@ -108,6 +108,33 @@ async function getAllCompany(skip = 0, limit = 0) {
 
 };
 
+async function getDescendantCompaniesByParentGroup(parentGroup) {
+    const descendants = [];
+    const visitedCompanyIDs = new Set([String(parentGroup)]);
+    let parentCompanyIDs = [parentGroup];
+
+    while (parentCompanyIDs.length) {
+        const children = await Companydatabase.find(
+            { ParentGroup: { $in: parentCompanyIDs } },
+            { _id: 1, CompanyID: 1 }
+        );
+        const nextParentCompanyIDs = [];
+
+        children.forEach((company) => {
+            const companyID = String(company.CompanyID);
+            if (visitedCompanyIDs.has(companyID)) return;
+
+            visitedCompanyIDs.add(companyID);
+            descendants.push(company);
+            nextParentCompanyIDs.push(company.CompanyID);
+        });
+
+        parentCompanyIDs = nextParentCompanyIDs;
+    }
+
+    return descendants;
+};
+
 async function updateCompany(CompanyID, Company) {
 
     const update_company = await Companydatabase.findOneAndUpdate(
@@ -224,6 +251,7 @@ module.exports = {
     existsCompanyWithId,
     AddNewCompany,
     getAllCompany,
+    getDescendantCompaniesByParentGroup,
     EditCompanyById,
     AbortCompanyById,
 

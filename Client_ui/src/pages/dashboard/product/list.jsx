@@ -4,7 +4,7 @@ import { CONFIG } from 'src/config-global';
 
 import { ProductListView } from 'src/sections/product/view';
 
-// ----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 
 const metadata = { title: `Company list | Dashboard - ${CONFIG.site.name}` };
 

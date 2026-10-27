@@ -11,7 +11,7 @@ const PORT = 5173;
 const env = loadEnv('all', process.cwd());
 
 export default defineConfig({
-  // base: env.VITE_BASE_PATH,
+  base: '/incident/',
   plugins: [
     react(),
     checker({
@@ -37,11 +37,14 @@ export default defineConfig({
     ],
   },
   server: {
-    port: PORT,
+    // port: PORT,
+    // host: true,
+    // watch: {
+    //   usePolling: true,
+    // }
     host: true,
-    watch: {
-      usePolling: true,
-    }
+    allowedHosts: ['mig-helpdesk.midrocinvestmentgroup.com'],
+    hmr: { protocol: 'wss', clientPort: 443 },
   },
   preview: { port: PORT, host: true },
 });
